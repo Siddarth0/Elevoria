@@ -6,6 +6,8 @@ import { ApiError } from "@/utils/apiError";
 import { ApiResponse } from "@/utils/apiResponse";
 import { generateAccessToken, generateRefreshToken } from "@/utils/token";
 import { hashPassword, comparePassword } from "@/utils/password";
+import { sanitizeUser } from "@/utils/sanitizeUser";
+import { env } from "@/config/env";
 
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const { fullName, email, password } = req.body;
@@ -38,13 +40,13 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: false,
+    secure: env.NODE_ENV === "production",
     sameSite: "lax",
   });
 
   res.json(
     new ApiResponse("User registered successfully", {
-      user,
+      user: sanitizeUser(user),
       accessToken,
     }),
   );
@@ -77,13 +79,13 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: false,
+    secure: env.NODE_ENV === "production",
     sameSite: "lax",
   });
 
   res.json(
     new ApiResponse("Login successfull", {
-      user,
+      user: sanitizeUser(user),
       accessToken,
     }),
   );
@@ -106,4 +108,25 @@ export const logout = asyncHandler(async (req: Request, res: Response) => {
   res.clearCookie("refreshToken");
 
   res.json(new ApiResponse("Logged out successfully"));
+});
+
+
+export const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
+  const token = req.cookies.refreshToken;
+
+  if (!token) throw new ApiError(401, "No refresh token");
+
+  const decoded = jwt.verify(token, env.JWT_REFRESH_SECRET) as { userId: string };
+
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.userId },
+  });
+
+  if (!user || user.refreshToken !== token) {
+    throw new ApiError(401, "Invalid refresh token");
+  }
+
+  const accessToken = generateAccessToken(user.id);
+
+  res.json(new ApiResponse("Access token refreshed", { accessToken }));
 });
