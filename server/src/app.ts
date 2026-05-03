@@ -8,6 +8,8 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 import { notFoundMiddleware } from "./middlewares/notFound.middleware";
 import { ApiResponse } from "./utils/apiResponse";
 
+import authRoutes from '@/routes/auth.routes'
+
 const app = express();
 
 app.use(
@@ -31,6 +33,7 @@ app.get("/", (_req, res) => {
 });
 
 /* Future routes here */
+app.use('/api/auth', authRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
