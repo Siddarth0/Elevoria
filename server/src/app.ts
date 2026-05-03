@@ -10,6 +10,8 @@ import { ApiResponse } from "./utils/apiResponse";
 
 import authRoutes from "@/routes/auth.routes";
 import workspaceRoutes from "@/routes/workspace.routes";
+import boardRoutes from "@/routes/board.routes";
+import taskRoutes from "@/routes/task.routes";
 
 const app = express();
 
@@ -36,6 +38,8 @@ app.get("/", (_req, res) => {
 /* Future routes here */
 app.use("/api/auth", authRoutes);
 app.use("/api/workspace", workspaceRoutes);
+app.use("/api/board", boardRoutes);
+app.use("/api/task", taskRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
