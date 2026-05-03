@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Prisma } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { ApiError } from "@/utils/apiError";

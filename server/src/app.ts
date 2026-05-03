@@ -8,7 +8,8 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 import { notFoundMiddleware } from "./middlewares/notFound.middleware";
 import { ApiResponse } from "./utils/apiResponse";
 
-import authRoutes from '@/routes/auth.routes'
+import authRoutes from "@/routes/auth.routes";
+import workspaceRoutes from "@/routes/workspace.routes";
 
 const app = express();
 
@@ -33,7 +34,8 @@ app.get("/", (_req, res) => {
 });
 
 /* Future routes here */
-app.use('/api/auth', authRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/workspace", workspaceRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
