@@ -9,6 +9,15 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const { title, description, priority, dueDate, boardId, assigneeId } =
     req.body;
 
+  const board = await prisma.board.findUnique({
+    where: { id: boardId },
+    include: { workspace: { include: { members: true } } },
+  });
+
+  const isMember = board?.workspace.members.some((m) => m.userId === userId);
+
+  if (!isMember) throw new ApiError(403, "Forbidden");
+
   const task = await prisma.task.create({
     data: {
       title,
