@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { ApiResponse } from "@/utils/apiResponse";
 import { ApiError } from "@/utils/apiError";
+import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
@@ -95,5 +96,48 @@ export const addCommentToTask = asyncHandler(
     });
 
     res.status(201).json(new ApiResponse("Comment added", comment));
+  },
+);
+
+export const attachFileToTask = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
+    const { taskId } = req.body;
+
+    if (!userId) throw new ApiError(401, "Unauthorized");
+    if (!req.file) throw new ApiError(400, "No file uploaded");
+
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        board: {
+          include: {
+            workspace: {
+              include: { members: true },
+            },
+          },
+        },
+      },
+    });
+
+    const isMember = task?.board.workspace.members.some(
+      (m) => m.userId === userId,
+    );
+
+    if (!task || !isMember) throw new ApiError(403, "Forbidden");
+
+    const uploaded = await uploadToCloudinary(req.file.buffer);
+
+    const attachment = await prisma.attachment.create({
+      data: {
+        taskId,
+        fileName: uploaded.original_filename,
+        fileUrl: uploaded.secure_url,
+      },
+    });
+
+    res
+      .status(201)
+      .json(new ApiResponse("Attachment uploaded successfully", attachment));
   },
 );
