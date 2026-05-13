@@ -45,9 +45,21 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(
   "/scalar",
-  apiReference({
-    content: swaggerSpec,
-  }),
+  (_req, res, next) => {
+    res.setHeader(
+      "Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: https:",
+        "connect-src 'self' https:",
+        "worker-src 'self' blob:",
+      ].join("; "),
+    );
+    next();
+  },
+  apiReference({ content: swaggerSpec }),
 );
 
 /* Future routes here */
