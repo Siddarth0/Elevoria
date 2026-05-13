@@ -12,7 +12,12 @@ import authRoutes from "@/routes/auth.routes";
 import workspaceRoutes from "@/routes/workspace.routes";
 import boardRoutes from "@/routes/board.routes";
 import taskRoutes from "@/routes/task.routes";
-import aiRoutes from "@/routes/ai.routes"
+import aiRoutes from "@/routes/ai.routes";
+
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./docs/swagger";
+
+import { apiReference } from "@scalar/express-api-reference";
 
 const app = express();
 
@@ -36,12 +41,21 @@ app.get("/", (_req, res) => {
   });
 });
 
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+app.use(
+  "/scalar",
+  apiReference({
+    content: swaggerSpec,
+  }),
+);
+
 /* Future routes here */
 app.use("/api/auth", authRoutes);
 app.use("/api/workspace", workspaceRoutes);
 app.use("/api/board", boardRoutes);
 app.use("/api/task", taskRoutes);
-app.use("/api/ai", aiRoutes)
+app.use("/api/ai", aiRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);
