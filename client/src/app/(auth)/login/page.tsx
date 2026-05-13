@@ -17,6 +17,7 @@ export default function LoginPage() {
     });
 
     setUser(res.data.data.user);
+    useAuthStore.getState().setAccessToken(res.data.data.accessToken)
   };
 
   return (
