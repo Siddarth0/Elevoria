@@ -7,28 +7,33 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 
-export default function LoginPage() {
-  const setUser = useAuthStore((s) => s.setUser);
-  const setAccessToken = useAuthStore((s) => s.setAccessToken);
-  const router = useRouter();
-
+export default function RegisterPage() {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const login = async () => {
-    if (!email.trim() || !password) return;
+  const setUser = useAuthStore((s) => s.setUser);
+  const setAccessToken = useAuthStore((s) => s.setAccessToken);
+  const router = useRouter();
+
+  const register = async () => {
+    if (!fullName.trim() || !email.trim() || !password) return;
     setLoading(true);
     setError("");
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const res = await api.post("/auth/register", {
+        fullName: fullName.trim(),
+        email: email.trim(),
+        password,
+      });
       setUser(res.data.data.user);
       setAccessToken(res.data.data.accessToken);
       router.push("/dashboard");
     } catch (e) {
       const err = e as { response?: { data?: { message?: string } } };
-      setError(err.response?.data?.message || "Invalid credentials.");
+      setError(err.response?.data?.message || "Registration failed.");
     } finally {
       setLoading(false);
     }
@@ -59,13 +64,13 @@ export default function LoginPage() {
               letterSpacing: "-0.02em",
             }}
           >
-            Manage your<br />
-            <span style={{ color: "var(--amber)" }}>projects</span><br />
-            smarter.
+            Ship faster<br />
+            with your<br />
+            <span style={{ color: "var(--amber)" }}>team.</span>
           </h1>
           <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
-            Collaborate, organize, and ship faster<br />
-            with AI-powered productivity tools.
+            Create an account and start organizing<br />
+            work the way it was meant to be done.
           </p>
         </div>
 
@@ -99,10 +104,10 @@ export default function LoginPage() {
             className="font-extrabold mb-1"
             style={{ fontSize: "1.75rem", color: "var(--text)", letterSpacing: "-0.02em" }}
           >
-            Welcome back
+            Create an account
           </h2>
           <p className="text-sm mb-8" style={{ color: "var(--text-2)" }}>
-            Sign in to continue to your workspace.
+            Join your team on Elevoria.
           </p>
 
           {error && (
@@ -119,60 +124,51 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-3">
-            <div>
-              <label
-                className="block text-xs font-semibold mb-1.5 tracking-widest uppercase"
-                style={{ color: "var(--text-3)" }}
-              >
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="field"
-              />
-            </div>
-            <div>
-              <label
-                className="block text-xs font-semibold mb-1.5 tracking-widest uppercase"
-                style={{ color: "var(--text-3)" }}
-              >
-                Password
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="field"
-                onKeyDown={(e) => e.key === "Enter" && login()}
-              />
-            </div>
+            {[
+              { label: "Full name",  type: "text",     value: fullName,  setter: setFullName,  placeholder: "Jane Smith" },
+              { label: "Email",      type: "email",    value: email,     setter: setEmail,     placeholder: "you@example.com" },
+              { label: "Password",   type: "password", value: password,  setter: setPassword,  placeholder: "••••••••" },
+            ].map(({ label, type, value, setter, placeholder }) => (
+              <div key={label}>
+                <label
+                  className="block text-xs font-semibold mb-1.5 tracking-widest uppercase"
+                  style={{ color: "var(--text-3)" }}
+                >
+                  {label}
+                </label>
+                <input
+                  type={type}
+                  value={value}
+                  onChange={(e) => setter(e.target.value)}
+                  placeholder={placeholder}
+                  className="field"
+                  onKeyDown={(e) => e.key === "Enter" && register()}
+                />
+              </div>
+            ))}
           </div>
 
           <button
-            onClick={login}
+            onClick={register}
             disabled={loading}
             className="btn-primary w-full mt-5"
           >
-            {loading ? "Signing in…" : (
+            {loading ? "Creating account…" : (
               <>
-                Sign in
+                Create account
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
 
           <p className="mt-6 text-sm text-center" style={{ color: "var(--text-3)" }}>
-            No account?{" "}
+            Already have an account?{" "}
             <Link
-              href="/register"
+              href="/login"
               className="font-semibold transition-colors"
               style={{ color: "var(--amber)" }}
             >
-              Create one
+              Sign in
             </Link>
           </p>
         </div>
