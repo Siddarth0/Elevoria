@@ -1,3 +1,4 @@
+import AuthProvider from "@/components/auth-provider";
 import "./globals.css";
 import QueryProvider from "@/providers/query-provider";
 
@@ -9,7 +10,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <QueryProvider>{children}</QueryProvider>
+        <QueryProvider>
+          <AuthProvider>{children}</AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );
