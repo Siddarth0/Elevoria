@@ -4,6 +4,7 @@ import { asyncHandler } from "@/utils/asyncHandler";
 import { ApiResponse } from "@/utils/apiResponse";
 import { ApiError } from "@/utils/apiError";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
+import { emitWorkspaceEvent } from "@/services/realtime.service";
 
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
@@ -63,6 +64,12 @@ export const updateTaskStatus = asyncHandler(
     const updated = await prisma.task.update({
       where: { id: taskId },
       data: { status },
+      include: { board: { include: { workspace: true } } },
+    });
+
+    emitWorkspaceEvent(updated.board.workspace.id, "task-status-updated", {
+      taskId: updated.id,
+      status: updated.status,
     });
 
     res.json(new ApiResponse("Task status updated", updated));
@@ -93,6 +100,21 @@ export const addCommentToTask = asyncHandler(
         taskId,
         userId,
       },
+      include: {
+        user: true,
+        task: {
+          include: {
+            board: {
+              include: { workspace: true },
+            },
+          },
+        },
+      },
+    });
+
+    emitWorkspaceEvent(comment.task.board.workspace.id, "task-comment-added", {
+      taskId: comment.taskId,
+      comment,
     });
 
     res.status(201).json(new ApiResponse("Comment added", comment));
