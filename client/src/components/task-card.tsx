@@ -5,10 +5,10 @@ const PRIORITY: Record<
   TaskPriority,
   { label: string; color: string; bg: string }
 > = {
-  LOW:    { label: "Low",    color: "#22D1A8", bg: "rgba(34,209,168,0.14)"  },
-  MEDIUM: { label: "Medium", color: "#F5A623", bg: "rgba(245,166,35,0.14)"  },
-  HIGH:   { label: "High",   color: "#FF5252", bg: "rgba(255,82,82,0.14)"   },
-  URGENT: { label: "Urgent", color: "#FF2D55", bg: "rgba(255,45,85,0.14)"   },
+  LOW: { label: "Low", color: "#4D9170", bg: "rgba(77,145,112,0.14)" },
+  MEDIUM: { label: "Medium", color: "#C49A4A", bg: "rgba(196,154,74,0.14)" },
+  HIGH: { label: "High", color: "#C66B4E", bg: "rgba(198,107,78,0.14)" },
+  URGENT: { label: "Urgent", color: "#C6524A", bg: "rgba(198,82,74,0.14)" },
 };
 
 function initials(name: string) {
@@ -21,7 +21,7 @@ function AvatarCluster({ task }: { task: Task }) {
     people.push(task.assignee);
   }
 
-  const colors = ["#7A70F0", "#22D1A8", "#F5A623", "#FF5252"];
+  const colors = ["#7AA28B", "#C8795A", "#D0AD57", "#8B9694"];
 
   return (
     <div className="flex -space-x-1.5">

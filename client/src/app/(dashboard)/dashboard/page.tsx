@@ -38,7 +38,7 @@ export default function DashboardPage() {
       <div className="anim-fade-up rounded-2xl p-6 sm:p-7 glass-panel overflow-hidden relative">
         <div
           className="absolute right-8 top-6 hidden h-24 w-24 rounded-full blur-3xl sm:block"
-          style={{ background: "rgba(66,212,200,0.22)" }}
+          style={{ background: "rgba(122,162,139,0.14)" }}
         />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>

@@ -5,13 +5,14 @@ import { useBoards } from "@/hooks/use-boards";
 import { useWorkspaces } from "@/hooks/use-workspaces";
 import Link from "next/link";
 import CreateBoardModal from "@/components/create-board-modal";
+import InviteMemberModal from "@/components/invite-member-modal";
 import { LayoutGrid, Users, Calendar } from "lucide-react";
 import { Workspace } from "@/types/workspace";
 import { Board } from "@/types/board";
 
 const BOARD_COLORS = [
-  "#42D4C8", "#FF8A5B", "#F4C95D", "#69A7FF",
-  "#9A8CFF", "#7BD88F", "#FF5D73", "#B7D86B",
+  "#7AA28B", "#C8795A", "#D0AD57", "#8B9694",
+  "#9D8D68", "#6F8D83", "#A76F5B", "#879572",
 ];
 
 function getBoardColor(name: string) {
@@ -80,9 +81,40 @@ export default function WorkspacePage() {
               {members.length} member{members.length !== 1 ? "s" : ""}
             </div>
           )}
+          <InviteMemberModal workspaceId={workspaceId} />
           <CreateBoardModal workspaceId={workspaceId} />
         </div>
       </div>
+
+      {members.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 anim-fade-up d2">
+          {members.slice(0, 4).map((member) => (
+            <div key={member.id} className="card p-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className="grid h-9 w-9 place-items-center rounded-full text-xs font-bold"
+                  style={{ background: "var(--accent-dim)", color: "var(--accent)" }}
+                >
+                  {member.user.fullName
+                    .split(" ")
+                    .map((part) => part[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold" style={{ color: "var(--text)" }}>
+                    {member.user.fullName}
+                  </p>
+                  <p className="truncate text-xs" style={{ color: "var(--text-3)" }}>
+                    {member.role.toLowerCase()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {boardList.length === 0 ? (
         <div

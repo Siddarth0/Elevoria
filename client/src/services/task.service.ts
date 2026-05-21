@@ -26,10 +26,33 @@ export const updateTaskStatus = async (data: {
   return res.data.data;
 };
 
+export const assignTask = async (data: {
+  taskId: string;
+  assigneeId: string;
+}) => {
+  const res = await api.patch("/task/assign", data);
+  return res.data.data;
+};
+
 export const addComment = async (data: {
   taskId: string;
   content: string;
 }) => {
   const res = await api.post("/task/comment", data);
+  return res.data.data;
+};
+
+export const attachFileToTask = async (data: {
+  taskId: string;
+  file: File;
+}) => {
+  const formData = new FormData();
+  formData.append("taskId", data.taskId);
+  formData.append("file", data.file);
+
+  const res = await api.post("/task/attach", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+
   return res.data.data;
 };

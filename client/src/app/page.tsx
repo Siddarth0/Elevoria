@@ -34,7 +34,7 @@ const features = [
     title: "AI-ready productivity",
     description: "Elevoria is shaped for smarter planning, summaries, and support as your workflow grows.",
     icon: Bot,
-    color: "#9A8CFF",
+    color: "#9D8D68",
   },
 ];
 
@@ -42,17 +42,17 @@ const boardColumns = [
   {
     title: "To Do",
     tasks: ["Design onboarding", "Invite workspace members"],
-    color: "#A7B5B4",
+    color: "#8B9694",
   },
   {
     title: "In Progress",
     tasks: ["Build project dashboard", "Draft sprint plan"],
-    color: "#42D4C8",
+    color: "#7AA28B",
   },
   {
     title: "Review",
     tasks: ["Polish task detail modal"],
-    color: "#F4C95D",
+    color: "#D0AD57",
   },
 ];
 
@@ -112,11 +112,11 @@ export default function Home() {
         <div className="anim-fade-up d2 relative">
           <div
             className="absolute -left-8 top-12 h-32 w-32 rounded-full blur-3xl"
-            style={{ background: "rgba(66,212,200,0.22)" }}
+            style={{ background: "rgba(122,162,139,0.16)" }}
           />
           <div
             className="absolute -right-5 bottom-12 h-36 w-36 rounded-full blur-3xl"
-            style={{ background: "rgba(255,138,91,0.16)" }}
+            style={{ background: "rgba(200,121,90,0.12)" }}
           />
 
           <div className="glass-panel relative rounded-2xl p-4 shadow-2xl sm:p-5">

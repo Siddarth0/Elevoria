@@ -10,10 +10,10 @@ import { WorkspaceMember } from "@/types/workspace";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PRIORITIES: { value: TaskPriority; label: string; color: string }[] = [
-  { value: "LOW",    label: "Low",    color: "#636363" },
-  { value: "MEDIUM", label: "Medium", color: "#4A86C8" },
-  { value: "HIGH",   label: "High",   color: "#C97B40" },
-  { value: "URGENT", label: "Urgent", color: "#B84F40" },
+  { value: "LOW", label: "Low", color: "#4D9170" },
+  { value: "MEDIUM", label: "Medium", color: "#C49A4A" },
+  { value: "HIGH", label: "High", color: "#C66B4E" },
+  { value: "URGENT", label: "Urgent", color: "#C6524A" },
 ];
 
 export default function CreateTaskModal({

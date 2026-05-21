@@ -5,20 +5,23 @@ import { useState } from "react";
 import { Task, TaskPriority, TaskStatus } from "@/types/task";
 import { useUpdateTaskStatus } from "@/hooks/use-update-task-status";
 import { useAddComment } from "@/hooks/use-add-comment";
-import { X, Calendar, User, Flag, MessageSquare, Send } from "lucide-react";
+import { useAssignTask } from "@/hooks/use-assign-task";
+import { useAttachFile } from "@/hooks/use-attach-file";
+import { WorkspaceMember } from "@/types/workspace";
+import { X, Calendar, User, Flag, MessageSquare, Send, Paperclip, Upload } from "lucide-react";
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string; color: string }[] = [
-  { value: "TODO",        label: "To Do",       color: "#6B6B80" },
-  { value: "IN_PROGRESS", label: "In Progress",  color: "#7A70F0" },
-  { value: "REVIEW",      label: "In Review",    color: "#F5A623" },
-  { value: "COMPLETED",   label: "Completed",    color: "#22D1A8" },
+  { value: "TODO",        label: "To Do",       color: "#8B9694" },
+  { value: "IN_PROGRESS", label: "In Progress",  color: "#4D9170" },
+  { value: "REVIEW",      label: "In Review",    color: "#C49A4A" },
+  { value: "COMPLETED",   label: "Completed",    color: "#6F9D72" },
 ];
 
 const PRIORITY: Record<TaskPriority, { label: string; color: string; bg: string }> = {
-  LOW:    { label: "Low",    color: "#22D1A8", bg: "rgba(34,209,168,0.14)"  },
-  MEDIUM: { label: "Medium", color: "#F5A623", bg: "rgba(245,166,35,0.14)"  },
-  HIGH:   { label: "High",   color: "#FF5252", bg: "rgba(255,82,82,0.14)"   },
-  URGENT: { label: "Urgent", color: "#FF2D55", bg: "rgba(255,45,85,0.14)"   },
+  LOW:    { label: "Low",    color: "#4D9170", bg: "rgba(77,145,112,0.14)"  },
+  MEDIUM: { label: "Medium", color: "#C49A4A", bg: "rgba(196,154,74,0.14)"  },
+  HIGH:   { label: "High",   color: "#C66B4E", bg: "rgba(198,107,78,0.14)"   },
+  URGENT: { label: "Urgent", color: "#C6524A", bg: "rgba(198,82,74,0.14)"   },
 };
 
 function initials(name: string) {
@@ -28,11 +31,13 @@ function initials(name: string) {
 export default function TaskDetailModal({
   task,
   boardId,
+  members,
   open,
   onClose,
 }: {
   task: Task;
   boardId: string;
+  members: WorkspaceMember[];
   open: boolean;
   onClose: () => void;
 }) {
@@ -40,14 +45,26 @@ export default function TaskDetailModal({
 
   const statusMutation = useUpdateTaskStatus(boardId);
   const commentMutation = useAddComment(boardId);
+  const assignMutation = useAssignTask(boardId);
+  const attachMutation = useAttachFile(boardId);
 
   const handleStatusChange = (status: TaskStatus) =>
     statusMutation.mutate({ taskId: task.id, status });
+
+  const handleAssigneeChange = (assigneeId: string) => {
+    if (!assigneeId || assigneeId === task.assignee?.id) return;
+    assignMutation.mutate({ taskId: task.id, assigneeId });
+  };
 
   const handleAddComment = async () => {
     if (!commentText.trim()) return;
     await commentMutation.mutateAsync({ taskId: task.id, content: commentText.trim() });
     setCommentText("");
+  };
+
+  const handleFileChange = async (file: File | undefined) => {
+    if (!file) return;
+    await attachMutation.mutateAsync({ taskId: task.id, file });
   };
 
   const priority = PRIORITY[task.priority];
@@ -152,9 +169,26 @@ export default function TaskDetailModal({
                 <p className="text-[10px] font-semibold tracking-widest uppercase mb-2 flex items-center gap-1.5" style={{ color: "var(--text-3)" }}>
                   <User className="w-3 h-3" /> Assignee
                 </p>
-                <p className="text-sm font-medium" style={{ color: "var(--text-2)" }}>
-                  {task.assignee ? task.assignee.fullName : "Unassigned"}
-                </p>
+                {members.length > 0 ? (
+                  <select
+                    value={task.assignee?.id ?? ""}
+                    onChange={(e) => handleAssigneeChange(e.target.value)}
+                    disabled={assignMutation.isPending}
+                    className="field"
+                    style={{ padding: "0.5rem 0.7rem", fontSize: "0.8125rem" }}
+                  >
+                    <option value="">Unassigned</option>
+                    {members.map((member) => (
+                      <option key={member.user.id} value={member.user.id}>
+                        {member.user.fullName}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-sm font-medium" style={{ color: "var(--text-2)" }}>
+                    {task.assignee ? task.assignee.fullName : "No member list available"}
+                  </p>
+                )}
               </div>
 
               {task.dueDate && (
@@ -191,6 +225,56 @@ export default function TaskDetailModal({
             </div>
 
             {/* Comments */}
+            <div>
+              <p
+                className="text-[10px] font-semibold tracking-widest uppercase mb-4 flex items-center gap-1.5"
+                style={{ color: "var(--text-3)" }}
+              >
+                <Paperclip className="w-3 h-3" />
+                Attachments ({task.attachments.length})
+              </p>
+
+              <div className="space-y-2">
+                {task.attachments.map((attachment) => {
+                  const name = attachment.fileName ?? attachment.filename ?? "Attachment";
+                  const url = attachment.fileUrl ?? attachment.url;
+
+                  return (
+                    <a
+                      key={attachment.id}
+                      href={url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors"
+                      style={{
+                        background: "rgba(233,229,215,0.035)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text-2)",
+                      }}
+                    >
+                      <span className="truncate">{name}</span>
+                      <Paperclip className="h-4 w-4 shrink-0" />
+                    </a>
+                  );
+                })}
+
+                {task.attachments.length === 0 && (
+                  <p className="text-sm" style={{ color: "var(--text-3)" }}>No attachments yet.</p>
+                )}
+              </div>
+
+              <label className="btn-ghost mt-3 w-full">
+                <Upload className="h-4 w-4" />
+                {attachMutation.isPending ? "Uploading..." : "Upload file"}
+                <input
+                  type="file"
+                  className="hidden"
+                  disabled={attachMutation.isPending}
+                  onChange={(e) => handleFileChange(e.target.files?.[0])}
+                />
+              </label>
+            </div>
+
             <div>
               <p
                 className="text-[10px] font-semibold tracking-widest uppercase mb-4 flex items-center gap-1.5"

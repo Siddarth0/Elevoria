@@ -2,8 +2,8 @@ import { Workspace } from "@/types/workspace";
 import Link from "next/link";
 
 const ACCENT_COLORS = [
-  "#7A70F0", "#22D1A8", "#F5A623", "#FF5252",
-  "#4A86C8", "#FF6B9D", "#A78BFA", "#34D399",
+  "#7AA28B", "#C8795A", "#D0AD57", "#8B9694",
+  "#9D8D68", "#6F8D83", "#A76F5B", "#879572",
 ];
 
 function getColor(name: string) {

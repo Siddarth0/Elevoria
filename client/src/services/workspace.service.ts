@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/store/auth.store";
 import { WorkspaceRole } from "@/types/workspace";
 
 function toSlug(name: string): string {
@@ -14,10 +15,45 @@ function toSlug(name: string): string {
 
 export const getMyWorkspaces = async () => {
   const res = await api.get("/workspace/mine");
-  // Backend returns WorkspaceMember[] with nested workspace object
-  return (res.data.data as Array<{ workspace: unknown }>).map(
-    (m) => m.workspace,
-  );
+  const currentUser = useAuthStore.getState().user;
+
+  return (
+    res.data.data as Array<{
+      id: string;
+      role: WorkspaceRole;
+      userId: string;
+      workspaceId: string;
+      workspace: {
+        id: string;
+        name: string;
+        slug: string;
+        ownerId?: string;
+        createdAt: string;
+        members?: unknown[];
+      };
+    }>
+  ).map((membership) => {
+    const workspace = membership.workspace;
+    const hasMembers =
+      Array.isArray(workspace.members) && workspace.members.length > 0;
+
+    return {
+      ...workspace,
+      members: hasMembers
+        ? workspace.members
+        : currentUser && currentUser.id === membership.userId
+          ? [
+              {
+                id: membership.id,
+                userId: membership.userId,
+                workspaceId: membership.workspaceId,
+                role: membership.role,
+                user: currentUser,
+              },
+            ]
+          : [],
+    };
+  });
 };
 
 export const createWorkspace = async (name: string) => {

@@ -1,41 +1,41 @@
 @import "tailwindcss";
 
 :root {
-  --canvas: #0f1317;
-  --canvas-2: #141a20;
-  --surface: #181f26;
-  --surface-soft: #1d252d;
-  --elevated: #222c35;
-  --overlay: #27333d;
+  --canvas: #111312;
+  --canvas-2: #151815;
+  --surface: #191d1a;
+  --surface-soft: #20251f;
+  --elevated: #252b25;
+  --overlay: #2c332d;
 
-  --border: rgba(224, 239, 242, 0.08);
-  --border-md: rgba(224, 239, 242, 0.14);
-  --border-lg: rgba(224, 239, 242, 0.24);
+  --border: rgba(233, 229, 215, 0.08);
+  --border-md: rgba(233, 229, 215, 0.14);
+  --border-lg: rgba(233, 229, 215, 0.22);
 
-  --text: #f4f7f5;
-  --text-2: #a7b5b4;
-  --text-3: #667675;
+  --text: #f2f0e8;
+  --text-2: #b8b3a5;
+  --text-3: #797466;
 
-  --accent: #42d4c8;
-  --accent-2: #ff8a5b;
-  --accent-3: #f4c95d;
-  --accent-dim: rgba(66, 212, 200, 0.1);
-  --accent-mid: rgba(66, 212, 200, 0.18);
-  --accent-dark: #21b6ad;
+  --accent: #7aa28b;
+  --accent-2: #c8795a;
+  --accent-3: #d0ad57;
+  --accent-dim: rgba(122, 162, 139, 0.12);
+  --accent-mid: rgba(122, 162, 139, 0.2);
+  --accent-dark: #668a74;
 
   --amber: var(--accent);
   --amber-dim: var(--accent-dim);
   --amber-mid: var(--accent-mid);
   --amber-dark: var(--accent-dark);
 
-  --prio-low: #42d4c8;
-  --prio-medium: #f4c95d;
-  --prio-high: #ff8a5b;
-  --prio-urgent: #ff5d73;
+  --prio-low: #7aa28b;
+  --prio-medium: #d0ad57;
+  --prio-high: #c8795a;
+  --prio-urgent: #c6524a;
 
-  --shadow-sm: 0 10px 30px rgba(0, 0, 0, 0.22);
-  --shadow-md: 0 18px 52px rgba(0, 0, 0, 0.32);
-  --shadow-glow: 0 18px 58px rgba(66, 212, 200, 0.14);
+  --shadow-sm: 0 10px 28px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 18px 48px rgba(0, 0, 0, 0.28);
+  --shadow-glow: 0 18px 42px rgba(122, 162, 139, 0.08);
 }
 
 @theme inline {
@@ -55,9 +55,8 @@ html {
 body {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 12% 8%, rgba(66, 212, 200, 0.13), transparent 26rem),
-    radial-gradient(circle at 86% 12%, rgba(255, 138, 91, 0.1), transparent 24rem),
-    linear-gradient(135deg, var(--canvas) 0%, #111821 48%, #121417 100%);
+    linear-gradient(180deg, rgba(233, 229, 215, 0.025), transparent 22rem),
+    var(--canvas);
   color: var(--text);
   font-family: var(--font-plus-jakarta-sans, system-ui, sans-serif);
   line-height: 1.55;
@@ -173,7 +172,7 @@ button {
 
 .glass-panel {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015)),
+    linear-gradient(180deg, rgba(233, 229, 215, 0.035), rgba(233, 229, 215, 0.012)),
     var(--surface);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
@@ -181,7 +180,7 @@ button {
 
 .card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.008)),
+    linear-gradient(180deg, rgba(233, 229, 215, 0.025), rgba(233, 229, 215, 0.006)),
     var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -194,7 +193,7 @@ button {
 
 .card:hover {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+    linear-gradient(180deg, rgba(233, 229, 215, 0.04), rgba(233, 229, 215, 0.012)),
     var(--surface-soft);
   border-color: var(--border-md);
   box-shadow: var(--shadow-md), var(--shadow-glow);
@@ -222,16 +221,17 @@ button {
   min-height: 2.55rem;
   border-radius: 12px;
   padding: 0.65rem 1.05rem;
-  color: #071312;
-  background: linear-gradient(135deg, var(--accent) 0%, #84efe5 100%);
-  box-shadow: 0 14px 30px rgba(66, 212, 200, 0.24);
+  color: #111312;
+  background: var(--accent);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
   font-size: 0.83rem;
   font-weight: 800;
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 18px 40px rgba(66, 212, 200, 0.32);
+  background: #89ad98;
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.24);
 }
 
 .btn-primary:active,
@@ -295,8 +295,8 @@ button {
 
 .field:focus {
   background: rgba(9, 13, 17, 0.62);
-  border-color: rgba(66, 212, 200, 0.58);
-  box-shadow: 0 0 0 4px rgba(66, 212, 200, 0.1);
+  border-color: rgba(122, 162, 139, 0.58);
+  box-shadow: 0 0 0 4px rgba(122, 162, 139, 0.1);
 }
 
 .field::placeholder {
@@ -326,8 +326,8 @@ select.field {
   position: relative;
   overflow: hidden;
   background:
-    linear-gradient(150deg, rgba(66, 212, 200, 0.16), transparent 38%),
-    linear-gradient(330deg, rgba(255, 138, 91, 0.14), transparent 32%),
+    linear-gradient(150deg, rgba(122, 162, 139, 0.15), transparent 38%),
+    linear-gradient(330deg, rgba(200, 121, 90, 0.1), transparent 32%),
     var(--canvas);
   border-right: 1px solid var(--border);
 }
@@ -338,7 +338,7 @@ select.field {
   inset: 4rem auto auto 9%;
   width: min(34vw, 410px);
   aspect-ratio: 1;
-  border: 1px solid rgba(244, 201, 93, 0.16);
+  border: 1px solid rgba(208, 173, 87, 0.16);
   border-radius: 32px;
   transform: rotate(12deg);
   animation: floatInPlace 7s ease-in-out infinite;
@@ -352,7 +352,7 @@ select.field {
   width: 24rem;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(66, 212, 200, 0.22), transparent 66%);
+  background: radial-gradient(circle, rgba(122, 162, 139, 0.16), transparent 66%);
   filter: blur(10px);
 }
 
@@ -369,8 +369,8 @@ select.field {
 
 .sidebar-search:focus-within {
   background: rgba(255, 255, 255, 0.055);
-  border-color: rgba(66, 212, 200, 0.38);
-  box-shadow: 0 0 0 4px rgba(66, 212, 200, 0.08);
+  border-color: rgba(122, 162, 139, 0.38);
+  box-shadow: 0 0 0 4px rgba(122, 162, 139, 0.08);
 }
 
 .sidebar-search input {

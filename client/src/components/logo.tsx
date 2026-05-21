@@ -21,8 +21,8 @@ function LogoMark({ size = "md" }: { size?: LogoProps["size"] }) {
       className={`${current.box} grid shrink-0 place-items-center rounded-xl shadow-lg`}
       style={{
         background:
-          "linear-gradient(135deg, rgba(66,212,200,1) 0%, rgba(244,201,93,0.95) 52%, rgba(255,138,91,1) 100%)",
-        boxShadow: "0 14px 34px rgba(66,212,200,0.24)",
+          "linear-gradient(135deg, rgba(122,162,139,1) 0%, rgba(208,173,87,0.95) 58%, rgba(200,121,90,1) 100%)",
+        boxShadow: "0 12px 28px rgba(0,0,0,0.24)",
       }}
       aria-hidden="true"
     >
@@ -42,8 +42,8 @@ function LogoMark({ size = "md" }: { size?: LogoProps["size"] }) {
           d="M14.1 24.95L20 10.5L25.9 24.95H22.65L21.55 22.05H18.32L17.26 24.95H14.1Z"
           fill="white"
         />
-        <path d="M16 28.6H26.4" stroke="#42D4C8" strokeWidth="2.6" strokeLinecap="round" />
-        <path d="M19.04 19.92H20.85L19.94 17.42L19.04 19.92Z" fill="#42D4C8" />
+        <path d="M16 28.6H26.4" stroke="#D0AD57" strokeWidth="2.6" strokeLinecap="round" />
+        <path d="M19.04 19.92H20.85L19.94 17.42L19.04 19.92Z" fill="#D0AD57" />
       </svg>
     </span>
   );

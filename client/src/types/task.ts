@@ -16,9 +16,12 @@ export type Comment = {
 
 export type Attachment = {
   id: string;
-  url: string;
-  filename: string;
-  createdAt: string;
+  fileUrl?: string;
+  fileName?: string;
+  url?: string;
+  filename?: string;
+  uploadedAt?: string;
+  createdAt?: string;
 };
 
 export type Task = {

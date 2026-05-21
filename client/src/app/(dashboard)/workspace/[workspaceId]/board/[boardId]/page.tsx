@@ -18,10 +18,10 @@ type Column = {
 };
 
 const COLUMNS: Column[] = [
-  { status: "TODO",        label: "To Do",       color: "#A7B5B4" },
-  { status: "IN_PROGRESS", label: "In Progress",  color: "#42D4C8" },
-  { status: "REVIEW",      label: "In Review",    color: "#F5A623" },
-  { status: "COMPLETED",   label: "Completed",    color: "#7BD88F" },
+  { status: "TODO",        label: "To Do",       color: "#8B9694" },
+  { status: "IN_PROGRESS", label: "In Progress",  color: "#4D9170" },
+  { status: "REVIEW",      label: "In Review",    color: "#C49A4A" },
+  { status: "COMPLETED",   label: "Completed",    color: "#6F9D72" },
 ];
 
 export default function BoardPage() {
@@ -172,6 +172,7 @@ export default function BoardPage() {
         <TaskDetailModal
           task={selectedTask}
           boardId={boardId}
+          members={members}
           open={!!selectedTask}
           onClose={() => setSelectedTask(null)}
         />
