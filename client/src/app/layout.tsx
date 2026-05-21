@@ -1,13 +1,19 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Fraunces, DM_Sans } from "next/font/google";
 import AuthProvider from "@/components/auth-provider";
 import QueryProvider from "@/providers/query-provider";
 import "./globals.css";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  weight: ["300", "400", "500", "600", "700", "800"],
+const fraunces = Fraunces({
   subsets: ["latin"],
-  variable: "--font-plus-jakarta-sans",
+  variable: "--font-fraunces",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -21,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={plusJakartaSans.variable}>
+    <html lang="en" className={`${fraunces.variable} ${dmSans.variable}`}>
       <body>
         <QueryProvider>
           <AuthProvider>{children}</AuthProvider>

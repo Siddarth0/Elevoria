@@ -6,7 +6,6 @@ import { useWorkspaces } from "@/hooks/use-workspaces";
 import Link from "next/link";
 import CreateBoardModal from "@/components/create-board-modal";
 import InviteMemberModal from "@/components/invite-member-modal";
-import AiWorkspacePanel from "@/components/ai-workspace-panel";
 import { LayoutGrid, Users, Calendar } from "lucide-react";
 import { Workspace } from "@/types/workspace";
 import { Board } from "@/types/board";
@@ -52,20 +51,34 @@ export default function WorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between anim-fade-up rounded-2xl p-6 glass-panel">
-        <div>
+      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between anim-fade-up rounded-2xl p-7 glass-panel overflow-hidden">
+        <div
+          className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full blur-3xl"
+          style={{ background: "rgba(122,162,139,0.22)" }}
+        />
+        <div className="relative">
           <p
-            className="text-xs font-medium tracking-widest uppercase mb-2"
+            className="text-[10px] font-bold tracking-[0.24em] uppercase mb-3 flex items-center gap-2"
             style={{ color: "var(--text-3)" }}
           >
+            <span
+              className="inline-block h-px w-7"
+              style={{ background: "var(--text-3)" }}
+            />
             {workspace?.name ?? "Workspace"}
           </p>
           <h1
-            className="font-extrabold leading-none text-3xl sm:text-4xl"
+            className="font-display leading-[0.95] text-4xl sm:text-5xl"
             style={{ color: "var(--text)" }}
           >
-            Boards
+            Boards <span className="display-italic" style={{ color: "var(--accent-3)" }}>&amp; flow</span>
           </h1>
+          <p
+            className="mt-3 text-sm max-w-md"
+            style={{ color: "var(--text-2)" }}
+          >
+            Each board is a conversation between people and work. Pick one, drift through the columns, keep the next thing moving.
+          </p>
         </div>
 
         <div className="flex items-center gap-3 anim-fade-up d2">
@@ -116,8 +129,6 @@ export default function WorkspacePage() {
           ))}
         </div>
       )}
-
-      <AiWorkspacePanel workspaceId={workspaceId} />
 
       {boardList.length === 0 ? (
         <div

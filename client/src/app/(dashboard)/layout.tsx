@@ -1,5 +1,6 @@
 import ProtectedRoute from "@/components/protected-route";
 import Sidebar from "@/components/sidebar";
+import AiAssistant from "@/components/ai-assistant";
 
 export default function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-auto p-5 sm:p-8">
           {children}
         </main>
+        <AiAssistant />
       </div>
     </ProtectedRoute>
   );

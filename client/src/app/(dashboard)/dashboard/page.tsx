@@ -35,25 +35,36 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="anim-fade-up rounded-2xl p-6 sm:p-7 glass-panel overflow-hidden relative">
+      <div className="anim-fade-up rounded-2xl p-7 sm:p-9 glass-panel overflow-hidden relative">
         <div
-          className="absolute right-8 top-6 hidden h-24 w-24 rounded-full blur-3xl sm:block"
-          style={{ background: "rgba(122,162,139,0.14)" }}
+          className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full blur-3xl"
+          style={{ background: "rgba(122,162,139,0.22)" }}
         />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-          <div>
+        <div
+          className="pointer-events-none absolute -left-20 -bottom-24 h-52 w-52 rounded-full blur-3xl"
+          style={{ background: "rgba(200,121,90,0.12)" }}
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-xl">
             <div
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold mb-4"
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-bold mb-5 tracking-widest uppercase"
               style={{ background: "var(--accent-dim)", color: "var(--accent)" }}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Overview
+              {new Date().toLocaleDateString("en-US", { weekday: "long" })} — overview
             </div>
-            <h1 className="font-extrabold leading-tight text-3xl sm:text-4xl" style={{ color: "var(--text)" }}>
-              Your workspaces
+            <h1
+              className="font-display leading-[0.95] text-4xl sm:text-5xl"
+              style={{ color: "var(--text)" }}
+            >
+              Your workspaces,
+              <br />
+              <span className="display-italic" style={{ color: "var(--accent-3)" }}>
+                quietly in motion.
+              </span>
             </h1>
-            <p className="mt-2 max-w-xl text-sm" style={{ color: "var(--text-2)" }}>
-              Pick a workspace, open a board, and keep the next piece of work moving.
+            <p className="mt-4 text-sm sm:text-[15px]" style={{ color: "var(--text-2)" }}>
+              Open a workspace, drift through its boards, and let the next piece of work surface itself.
             </p>
           </div>
           <CreateWorkspaceModal />
@@ -84,21 +95,31 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="flex items-center justify-between anim-fade-up d2">
+      <div className="flex items-end justify-between anim-fade-up d2 pt-2">
         <div>
           <p
-            className="text-xs font-semibold tracking-widest uppercase mb-2"
+            className="text-[10px] font-bold tracking-[0.24em] uppercase mb-2 flex items-center gap-2"
             style={{ color: "var(--text-3)" }}
           >
-            Overview
+            <span
+              className="inline-block h-px w-7"
+              style={{ background: "var(--text-3)" }}
+            />
+            Library
           </p>
-          <h1
-            className="font-extrabold leading-none"
-            style={{ fontSize: "1.875rem", color: "var(--text)", letterSpacing: "-0.02em" }}
+          <h2
+            className="font-display leading-none text-3xl sm:text-4xl"
+            style={{ color: "var(--text)" }}
           >
-            Workspace library
-          </h1>
+            All workspaces
+          </h2>
         </div>
+        <p
+          className="text-xs hidden sm:block"
+          style={{ color: "var(--text-3)" }}
+        >
+          {workspaces.length} active
+        </p>
       </div>
 
       {workspaces.length === 0 ? (
