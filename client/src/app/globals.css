@@ -924,3 +924,110 @@ select.field {
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.05);
 }
+
+/* Structured AI result rendering inside chat bubbles */
+
+.ai-result-list {
+  margin-top: 0.55rem;
+  padding-left: 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  list-style: disc;
+  color: var(--text-2);
+}
+
+.ai-result-list li {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  padding-left: 0.15rem;
+}
+
+.ai-result-list li::marker {
+  color: var(--accent);
+}
+
+.ai-result-groups {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.ai-result-group {
+  border-left: 2px solid rgba(122, 162, 139, 0.4);
+  padding-left: 0.75rem;
+}
+
+.ai-result-group__title {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+}
+
+.ai-result-numbered {
+  list-style: decimal;
+  padding-left: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: var(--text-2);
+}
+
+.ai-result-numbered li {
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.ai-result-numbered li::marker {
+  color: var(--text-3);
+  font-weight: 600;
+}
+
+.ai-deadline-list {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.ai-deadline-row {
+  position: relative;
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(233, 229, 215, 0.06);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.2rem 0.6rem;
+}
+
+.ai-deadline-row__title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.ai-deadline-row__date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  align-self: start;
+  white-space: nowrap;
+}
+
+.ai-deadline-row__reason {
+  grid-column: 1 / -1;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-2);
+}

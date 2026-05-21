@@ -8,6 +8,10 @@ import { useAddComment } from "@/hooks/use-add-comment";
 import { useGenerateSubtasks, useSuggestDeadline } from "@/hooks/use-ai-tools";
 import { useAssignTask } from "@/hooks/use-assign-task";
 import { useAttachFile } from "@/hooks/use-attach-file";
+import type {
+  DeadlineResult,
+  SubtasksResult,
+} from "@/services/ai.service";
 import { WorkspaceMember } from "@/types/workspace";
 import { X, Calendar, User, Flag, MessageSquare, Send, Paperclip, Upload, Bot, CalendarClock, ListChecks } from "lucide-react";
 
@@ -52,8 +56,8 @@ export default function TaskDetailModal({
   const attachMutation = useAttachFile(boardId);
   const subtasksMutation = useGenerateSubtasks();
   const deadlineMutation = useSuggestDeadline();
-  const [aiSubtasks, setAiSubtasks] = useState("");
-  const [aiDeadline, setAiDeadline] = useState("");
+  const [aiSubtasks, setAiSubtasks] = useState<SubtasksResult | null>(null);
+  const [aiDeadline, setAiDeadline] = useState<DeadlineResult | null>(null);
   const [aiError, setAiError] = useState("");
 
   const handleStatusChange = (status: TaskStatus) =>
@@ -75,14 +79,12 @@ export default function TaskDetailModal({
     await attachMutation.mutateAsync({ taskId: task.id, file });
   };
 
-  const taskPrompt = [task.title, task.description].filter(Boolean).join("\n\n");
-
   const generateAiSubtasks = async () => {
     setAiError("");
     try {
       const result = await subtasksMutation.mutateAsync({
-        description: taskPrompt,
         workspaceId,
+        taskId: task.id,
       });
       setAiSubtasks(result);
     } catch (e) {
@@ -95,8 +97,8 @@ export default function TaskDetailModal({
     setAiError("");
     try {
       const result = await deadlineMutation.mutateAsync({
-        description: taskPrompt,
         workspaceId,
+        taskId: task.id,
       });
       setAiDeadline(result);
     } catch (e) {
@@ -273,7 +275,7 @@ export default function TaskDetailModal({
                 <button
                   type="button"
                   onClick={generateAiSubtasks}
-                  disabled={subtasksMutation.isPending || !taskPrompt.trim()}
+                  disabled={subtasksMutation.isPending}
                   className="btn-ghost"
                 >
                   <ListChecks className="h-4 w-4" />
@@ -282,7 +284,7 @@ export default function TaskDetailModal({
                 <button
                   type="button"
                   onClick={generateAiDeadline}
-                  disabled={deadlineMutation.isPending || !taskPrompt.trim()}
+                  disabled={deadlineMutation.isPending}
                   className="btn-ghost"
                 >
                   <CalendarClock className="h-4 w-4" />
@@ -296,16 +298,45 @@ export default function TaskDetailModal({
               )}
               {(aiSubtasks || aiDeadline) && (
                 <div className="mt-4 space-y-4">
-                  {aiSubtasks && (
+                  {aiSubtasks && aiSubtasks.items[0] && (
                     <div>
-                      <p className="mb-1 text-xs font-bold" style={{ color: "var(--text)" }}>Subtasks</p>
-                      <p className="whitespace-pre-wrap text-sm leading-7" style={{ color: "var(--text-2)" }}>{aiSubtasks}</p>
+                      <p className="mb-2 text-xs font-bold" style={{ color: "var(--text)" }}>Subtasks</p>
+                      {aiSubtasks.unavailable ? (
+                        <p className="text-sm" style={{ color: "var(--text-2)" }}>
+                          AI unavailable — try again in a moment.
+                        </p>
+                      ) : (
+                        <ol className="ml-4 list-decimal space-y-1.5 text-sm leading-7" style={{ color: "var(--text-2)" }}>
+                          {aiSubtasks.items[0].subtasks.map((s, i) => (
+                            <li key={i}>{s}</li>
+                          ))}
+                        </ol>
+                      )}
                     </div>
                   )}
-                  {aiDeadline && (
+                  {aiDeadline && aiDeadline.items[0] && (
                     <div>
-                      <p className="mb-1 text-xs font-bold" style={{ color: "var(--text)" }}>Deadline</p>
-                      <p className="whitespace-pre-wrap text-sm leading-7" style={{ color: "var(--text-2)" }}>{aiDeadline}</p>
+                      <p className="mb-2 text-xs font-bold" style={{ color: "var(--text)" }}>Deadline</p>
+                      {aiDeadline.unavailable ? (
+                        <p className="text-sm" style={{ color: "var(--text-2)" }}>
+                          AI unavailable — try again in a moment.
+                        </p>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                            style={{ background: "var(--accent-dim)", color: "var(--accent)" }}
+                          >
+                            <CalendarClock className="h-3 w-3" />
+                            {aiDeadline.items[0].suggestedDate}
+                          </span>
+                          {aiDeadline.items[0].reason && (
+                            <p className="text-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
+                              {aiDeadline.items[0].reason}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

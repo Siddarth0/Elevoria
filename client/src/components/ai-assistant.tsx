@@ -16,14 +16,26 @@ import {
   useSuggestDeadline,
   useSummarizeDocument,
 } from "@/hooks/use-ai-tools";
+import type {
+  DeadlineResult,
+  SubtasksResult,
+  SummarizeResult,
+} from "@/services/ai.service";
 
 type Tool = "summarize" | "subtasks" | "deadline";
+
+type AssistantPayload =
+  | { kind: "summary"; data: SummarizeResult }
+  | { kind: "subtasks"; data: SubtasksResult }
+  | { kind: "deadline"; data: DeadlineResult }
+  | { kind: "error"; message: string };
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   tool: Tool;
-  text: string;
+  text?: string;
+  payload?: AssistantPayload;
   pending?: boolean;
 };
 
@@ -33,47 +45,34 @@ const TOOLS: {
   icon: typeof FileText;
   color: string;
   placeholder: string;
-  starters: string[];
 }[] = [
   {
     id: "summarize",
     label: "Summarize",
     icon: FileText,
     color: "var(--accent-3)",
-    placeholder: "Paste planning notes, meeting context, or a long brief...",
-    starters: [
-      "Summarize this week's standup notes",
-      "Boil down a long product brief",
-    ],
+    placeholder: "Add a focus (optional) — e.g. 'what's blocking us this week?'",
   },
   {
     id: "subtasks",
     label: "Subtasks",
     icon: ListChecks,
     color: "var(--accent)",
-    placeholder: "Describe a task — I'll break it into a checklist...",
-    starters: [
-      "Break down 'Ship onboarding v2'",
-      "Subtasks for migrating to Postgres",
-    ],
+    placeholder: "Add a focus (optional) — or just hit send to use the current scope.",
   },
   {
     id: "deadline",
     label: "Deadline",
     icon: CalendarClock,
     color: "var(--accent-2)",
-    placeholder: "Describe a task — I'll suggest a realistic deadline...",
-    starters: [
-      "When should 'Redesign settings page' ship?",
-      "Estimate a deadline for an API rewrite",
-    ],
+    placeholder: "Add a focus (optional) — or just hit send to use the current scope.",
   },
 ];
 
 const TOOL_LABEL: Record<Tool, string> = {
   summarize: "Summary",
   subtasks: "Subtasks",
-  deadline: "Deadline",
+  deadline: "Deadlines",
 };
 
 function newId() {
@@ -83,15 +82,38 @@ function newId() {
   return Math.random().toString(36).slice(2);
 }
 
+function formatDate(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function scopeBadge(scope: string, boardId: string | null) {
+  if (scope === "task") return "On this task";
+  if (scope === "board") return "On this board";
+  if (scope === "workspace") return "Across the workspace";
+  if (scope === "text") return "On your input";
+  return boardId ? "On this board" : "Across the workspace";
+}
+
 export default function AiAssistant() {
   const pathname = usePathname();
-  const workspaceId = useMemo(() => {
-    const match = pathname?.match(/\/workspace\/([^/]+)/);
-    return match?.[1] ?? null;
+
+  const { workspaceId, boardId } = useMemo(() => {
+    const wsMatch = pathname?.match(/\/workspace\/([^/]+)/);
+    const boardMatch = pathname?.match(/\/board\/([^/]+)/);
+    return {
+      workspaceId: wsMatch?.[1] ?? null,
+      boardId: boardMatch?.[1] ?? null,
+    };
   }, [pathname]);
 
   const [open, setOpen] = useState(false);
-  const [tool, setTool] = useState<Tool>("subtasks");
+  const [tool, setTool] = useState<Tool>("summarize");
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -115,7 +137,6 @@ export default function AiAssistant() {
 
   useEffect(() => {
     if (open) {
-      // small delay so the focus ring lands after the open transition starts
       const t = setTimeout(() => inputRef.current?.focus(), 220);
       return () => clearTimeout(t);
     }
@@ -123,48 +144,63 @@ export default function AiAssistant() {
 
   if (!workspaceId) return null;
 
-  const send = async (override?: string) => {
-    const text = (override ?? input).trim();
-    if (!text || isPending) return;
+  const scopeLabel = boardId ? "this board" : "this workspace";
+
+  const send = async () => {
+    if (isPending) return;
+    const refinement = input.trim();
+
+    const userText =
+      refinement ||
+      (tool === "summarize"
+        ? `Summarize ${scopeLabel}`
+        : tool === "subtasks"
+          ? `Draft subtasks across ${scopeLabel}`
+          : `Suggest deadlines across ${scopeLabel}`);
 
     const userMsg: Message = {
       id: newId(),
       role: "user",
       tool,
-      text,
+      text: userText,
     };
     const pendingMsg: Message = {
       id: newId(),
       role: "assistant",
       tool,
-      text: "",
       pending: true,
     };
 
     setMessages((m) => [...m, userMsg, pendingMsg]);
     setInput("");
 
+    const scope = { workspaceId, boardId: boardId ?? undefined };
+
     try {
-      let result = "";
+      let payload: AssistantPayload;
       if (tool === "summarize") {
-        result = await summarize.mutateAsync({ content: text, workspaceId });
+        const data = await summarize.mutateAsync({
+          ...scope,
+          content: refinement || undefined,
+        });
+        payload = { kind: "summary", data };
       } else if (tool === "subtasks") {
-        result = await subtasks.mutateAsync({
-          description: text,
-          workspaceId,
+        const data = await subtasks.mutateAsync({
+          ...scope,
+          description: refinement || undefined,
         });
+        payload = { kind: "subtasks", data };
       } else {
-        result = await deadline.mutateAsync({
-          description: text,
-          workspaceId,
+        const data = await deadline.mutateAsync({
+          ...scope,
+          description: refinement || undefined,
         });
+        payload = { kind: "deadline", data };
       }
 
       setMessages((m) =>
         m.map((msg) =>
-          msg.id === pendingMsg.id
-            ? { ...msg, text: result, pending: false }
-            : msg,
+          msg.id === pendingMsg.id ? { ...msg, payload, pending: false } : msg,
         ),
       );
     } catch (e) {
@@ -174,9 +210,12 @@ export default function AiAssistant() {
           msg.id === pendingMsg.id
             ? {
                 ...msg,
-                text:
-                  err.response?.data?.message ||
-                  "Hmm — I couldn't process that. Try again.",
+                payload: {
+                  kind: "error",
+                  message:
+                    err.response?.data?.message ||
+                    "Hmm — I couldn't process that. Try again.",
+                },
                 pending: false,
               }
             : msg,
@@ -187,7 +226,6 @@ export default function AiAssistant() {
 
   return (
     <>
-      {/* Floating Orb */}
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -200,7 +238,6 @@ export default function AiAssistant() {
         <Sparkles className="ai-fab__icon" />
       </button>
 
-      {/* Panel */}
       <div
         className={`ai-panel ${open ? "ai-panel--open" : ""}`}
         role="dialog"
@@ -211,9 +248,11 @@ export default function AiAssistant() {
           <div className="ai-panel__brand">
             <span className="ai-panel__brand-dot" aria-hidden />
             <div>
-              <p className="ai-panel__eyebrow">Atelier · AI</p>
+              <p className="ai-panel__eyebrow">
+                Atelier · {boardId ? "Board" : "Workspace"}
+              </p>
               <h3 className="ai-panel__title">
-                Workspace <em>assistant</em>
+                Working on <em>{boardId ? "this board" : "this workspace"}</em>
               </h3>
             </div>
           </div>
@@ -252,31 +291,11 @@ export default function AiAssistant() {
 
         <div ref={scrollRef} className="ai-panel__thread">
           {messages.length === 0 ? (
-            <div className="ai-empty">
-              <span className="ai-empty__rings" aria-hidden />
-              <h4 className="ai-empty__title">
-                Three tools, <em>one quiet chat.</em>
-              </h4>
-              <p className="ai-empty__body">
-                Pick a tool above, drop in some context, and I&apos;ll respond
-                inline. Everything stays scoped to this workspace.
-              </p>
-              <div className="ai-empty__chips">
-                {activeTool.starters.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => {
-                      setInput(s);
-                      inputRef.current?.focus();
-                    }}
-                    className="ai-empty__chip"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <EmptyState
+              boardId={boardId}
+              tool={tool}
+              onRun={() => send()}
+            />
           ) : (
             <ul className="ai-thread">
               {messages.map((m) => (
@@ -287,17 +306,20 @@ export default function AiAssistant() {
                     </div>
                   )}
                   <div className="ai-bubble__content">
-                    {m.role === "assistant" && !m.pending && (
-                      <span className="ai-bubble__tag">{TOOL_LABEL[m.tool]}</span>
-                    )}
-                    {m.pending ? (
+                    {m.role === "user" ? (
+                      <p>{m.text}</p>
+                    ) : m.pending ? (
                       <div className="ai-typing" aria-label="Thinking">
                         <span />
                         <span />
                         <span />
                       </div>
                     ) : (
-                      <p>{m.text}</p>
+                      <AssistantContent
+                        tool={m.tool}
+                        payload={m.payload}
+                        boardId={boardId}
+                      />
                     )}
                   </div>
                 </li>
@@ -328,13 +350,183 @@ export default function AiAssistant() {
           <button
             type="button"
             onClick={() => send()}
-            disabled={!input.trim() || isPending}
+            disabled={isPending}
             className="ai-send"
             aria-label="Send message"
+            title={
+              input.trim()
+                ? "Send"
+                : `Run ${tool} on ${boardId ? "this board" : "this workspace"}`
+            }
           >
             <Send className="h-4 w-4" />
           </button>
         </div>
+      </div>
+    </>
+  );
+}
+
+/* ------------ subcomponents ------------ */
+
+function EmptyState({
+  boardId,
+  tool,
+  onRun,
+}: {
+  boardId: string | null;
+  tool: Tool;
+  onRun: () => void;
+}) {
+  const scopeLabel = boardId ? "this board" : "this workspace";
+  const verb =
+    tool === "summarize"
+      ? "summarize"
+      : tool === "subtasks"
+        ? "draft subtasks for"
+        : "suggest deadlines for";
+
+  return (
+    <div className="ai-empty">
+      <span className="ai-empty__rings" aria-hidden />
+      <h4 className="ai-empty__title">
+        Grounded in <em>{scopeLabel}.</em>
+      </h4>
+      <p className="ai-empty__body">
+        I&apos;ll read what&apos;s actually in {scopeLabel} — boards, tasks, status, comments —
+        and only answer what fits. Add a focus below if you have one, or just run.
+      </p>
+      <button
+        type="button"
+        onClick={onRun}
+        className="ai-empty__chip"
+      >
+        Try: {verb} {scopeLabel}
+      </button>
+    </div>
+  );
+}
+
+function AssistantContent({
+  tool,
+  payload,
+  boardId,
+}: {
+  tool: Tool;
+  payload: AssistantPayload | undefined;
+  boardId: string | null;
+}) {
+  if (!payload) {
+    return <p style={{ color: "var(--text-3)" }}>No response.</p>;
+  }
+
+  if (payload.kind === "error") {
+    return (
+      <>
+        <span className="ai-bubble__tag" style={{ color: "#F0A09A" }}>
+          Error
+        </span>
+        <p>{payload.message}</p>
+      </>
+    );
+  }
+
+  if (payload.data.unavailable) {
+    return (
+      <>
+        <span className="ai-bubble__tag">{TOOL_LABEL[tool]}</span>
+        <p style={{ color: "var(--text-2)" }}>
+          AI quota reached or provider unavailable. Try again in a moment.
+        </p>
+      </>
+    );
+  }
+
+  if (payload.kind === "summary") {
+    const d = payload.data;
+    return (
+      <>
+        <span className="ai-bubble__tag">
+          {TOOL_LABEL[tool]} · {scopeBadge(d.scope, boardId)}
+        </span>
+        <p style={{ fontWeight: 500 }}>{d.title}</p>
+        {d.summary && (
+          <p style={{ marginTop: "0.35rem", color: "var(--text-2)" }}>{d.summary}</p>
+        )}
+        {d.highlights.length > 0 && (
+          <ul className="ai-result-list">
+            {d.highlights.map((h, i) => (
+              <li key={i}>{h}</li>
+            ))}
+          </ul>
+        )}
+      </>
+    );
+  }
+
+  if (payload.kind === "subtasks") {
+    const d = payload.data;
+    if (d.items.length === 0) {
+      return (
+        <>
+          <span className="ai-bubble__tag">{TOOL_LABEL[tool]}</span>
+          <p style={{ color: "var(--text-2)" }}>
+            Nothing to break down here yet — add an open task or describe one in the input.
+          </p>
+        </>
+      );
+    }
+    return (
+      <>
+        <span className="ai-bubble__tag">
+          {TOOL_LABEL[tool]} · {scopeBadge(d.scope, boardId)}
+        </span>
+        <div className="ai-result-groups">
+          {d.items.map((it, i) => (
+            <div key={i} className="ai-result-group">
+              <p className="ai-result-group__title">{it.taskTitle}</p>
+              <ol className="ai-result-numbered">
+                {it.subtasks.map((s, j) => (
+                  <li key={j}>{s}</li>
+                ))}
+              </ol>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  // deadline
+  const d = payload.data;
+  if (d.items.length === 0) {
+    return (
+      <>
+        <span className="ai-bubble__tag">{TOOL_LABEL[tool]}</span>
+        <p style={{ color: "var(--text-2)" }}>
+          Everything in scope already has a date — nothing to estimate.
+        </p>
+      </>
+    );
+  }
+  return (
+    <>
+      <span className="ai-bubble__tag">
+        {TOOL_LABEL[tool]} · {scopeBadge(d.scope, boardId)}
+      </span>
+      <div className="ai-deadline-list">
+        {d.items.map((it, i) => (
+          <div key={i} className="ai-deadline-row">
+            <div className="ai-deadline-row__title">{it.taskTitle}</div>
+            <div className="ai-deadline-row__date">
+              <CalendarClock className="h-3 w-3" />
+              {formatDate(it.suggestedDate)}
+            </div>
+            {it.reason && (
+              <div className="ai-deadline-row__reason">{it.reason}</div>
+            )}
+          </div>
+        ))}
       </div>
     </>
   );

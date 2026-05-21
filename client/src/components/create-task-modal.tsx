@@ -4,6 +4,10 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useState } from "react";
 import { useCreateTask } from "@/hooks/use-create-task";
 import { useGenerateSubtasks, useSuggestDeadline } from "@/hooks/use-ai-tools";
+import type {
+  DeadlineResult,
+  SubtasksResult,
+} from "@/services/ai.service";
 import { updateTaskStatus } from "@/services/task.service";
 import { Bot, CalendarClock, ListChecks, Plus, X } from "lucide-react";
 import { TaskPriority, TaskStatus } from "@/types/task";
@@ -34,8 +38,8 @@ export default function CreateTaskModal({
   const [priority, setPriority] = useState<TaskPriority>("MEDIUM");
   const [dueDate, setDueDate] = useState("");
   const [assigneeId, setAssigneeId] = useState("");
-  const [aiSubtasks, setAiSubtasks] = useState("");
-  const [aiDeadline, setAiDeadline] = useState("");
+  const [aiSubtasks, setAiSubtasks] = useState<SubtasksResult | null>(null);
+  const [aiDeadline, setAiDeadline] = useState<DeadlineResult | null>(null);
 
   const mutation = useCreateTask(boardId);
   const subtasksMutation = useGenerateSubtasks();
@@ -45,16 +49,6 @@ export default function CreateTaskModal({
   const [error, setError] = useState("");
 
   const aiDescription = [title, description].filter(Boolean).join("\n\n");
-
-  const parseSuggestedDate = (text: string) => {
-    const isoMatch = text.match(/\b20\d{2}-\d{2}-\d{2}\b/);
-    if (isoMatch) return isoMatch[0];
-
-    const parsed = Date.parse(text);
-    if (Number.isNaN(parsed)) return "";
-
-    return new Date(parsed).toISOString().slice(0, 10);
-  };
 
   const generateAiSubtasks = async () => {
     if (!aiDescription.trim()) return;
@@ -80,9 +74,8 @@ export default function CreateTaskModal({
         workspaceId,
       });
       setAiDeadline(result);
-
-      const parsedDate = parseSuggestedDate(result);
-      if (parsedDate) setDueDate(parsedDate);
+      const iso = result.items[0]?.suggestedDate;
+      if (iso && /^\d{4}-\d{2}-\d{2}$/.test(iso)) setDueDate(iso);
     } catch (e) {
       const err = e as { response?: { data?: { message?: string } } };
       setError(err.response?.data?.message || "Could not suggest a deadline.");
@@ -110,8 +103,8 @@ export default function CreateTaskModal({
       setPriority("MEDIUM");
       setDueDate("");
       setAssigneeId("");
-      setAiSubtasks("");
-      setAiDeadline("");
+      setAiSubtasks(null);
+      setAiDeadline(null);
       setOpen(false);
     } catch (e) {
       const err = e as { response?: { data?: { message?: string } } };
@@ -252,16 +245,37 @@ export default function CreateTaskModal({
                     AI suggestions
                   </p>
                 </div>
-                {aiSubtasks && (
+                {aiSubtasks && aiSubtasks.items[0] && (
                   <div className="mb-3">
                     <p className="mb-1 text-xs font-bold" style={{ color: "var(--text)" }}>Subtasks</p>
-                    <p className="whitespace-pre-wrap text-sm leading-6" style={{ color: "var(--text-2)" }}>{aiSubtasks}</p>
+                    {aiSubtasks.unavailable ? (
+                      <p className="text-sm" style={{ color: "var(--text-2)" }}>{aiSubtasks.items[0]?.subtasks[0] ?? "Unavailable."}</p>
+                    ) : (
+                      <ol className="ml-4 list-decimal space-y-1 text-sm leading-6" style={{ color: "var(--text-2)" }}>
+                        {aiSubtasks.items[0].subtasks.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ol>
+                    )}
                   </div>
                 )}
-                {aiDeadline && (
+                {aiDeadline && aiDeadline.items[0] && (
                   <div>
                     <p className="mb-1 text-xs font-bold" style={{ color: "var(--text)" }}>Deadline</p>
-                    <p className="whitespace-pre-wrap text-sm leading-6" style={{ color: "var(--text-2)" }}>{aiDeadline}</p>
+                    <div className="flex items-start gap-2">
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                        style={{ background: "var(--accent-dim)", color: "var(--accent)" }}
+                      >
+                        <CalendarClock className="h-3 w-3" />
+                        {aiDeadline.items[0].suggestedDate}
+                      </span>
+                      {aiDeadline.items[0].reason && (
+                        <p className="text-xs leading-relaxed" style={{ color: "var(--text-2)" }}>
+                          {aiDeadline.items[0].reason}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
