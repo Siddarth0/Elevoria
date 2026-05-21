@@ -6,6 +6,7 @@ import { useWorkspaces } from "@/hooks/use-workspaces";
 import Link from "next/link";
 import CreateBoardModal from "@/components/create-board-modal";
 import InviteMemberModal from "@/components/invite-member-modal";
+import AiWorkspacePanel from "@/components/ai-workspace-panel";
 import { LayoutGrid, Users, Calendar } from "lucide-react";
 import { Workspace } from "@/types/workspace";
 import { Board } from "@/types/board";
@@ -115,6 +116,8 @@ export default function WorkspacePage() {
           ))}
         </div>
       )}
+
+      <AiWorkspacePanel workspaceId={workspaceId} />
 
       {boardList.length === 0 ? (
         <div

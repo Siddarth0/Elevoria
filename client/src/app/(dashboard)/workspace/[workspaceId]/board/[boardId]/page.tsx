@@ -160,6 +160,7 @@ export default function BoardPage() {
 
               <CreateTaskModal
                 boardId={boardId}
+                workspaceId={workspaceId}
                 defaultStatus={col.status}
                 members={members}
               />
@@ -172,6 +173,7 @@ export default function BoardPage() {
         <TaskDetailModal
           task={selectedTask}
           boardId={boardId}
+          workspaceId={workspaceId}
           members={members}
           open={!!selectedTask}
           onClose={() => setSelectedTask(null)}

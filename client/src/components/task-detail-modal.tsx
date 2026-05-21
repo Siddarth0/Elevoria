@@ -5,10 +5,11 @@ import { useState } from "react";
 import { Task, TaskPriority, TaskStatus } from "@/types/task";
 import { useUpdateTaskStatus } from "@/hooks/use-update-task-status";
 import { useAddComment } from "@/hooks/use-add-comment";
+import { useGenerateSubtasks, useSuggestDeadline } from "@/hooks/use-ai-tools";
 import { useAssignTask } from "@/hooks/use-assign-task";
 import { useAttachFile } from "@/hooks/use-attach-file";
 import { WorkspaceMember } from "@/types/workspace";
-import { X, Calendar, User, Flag, MessageSquare, Send, Paperclip, Upload } from "lucide-react";
+import { X, Calendar, User, Flag, MessageSquare, Send, Paperclip, Upload, Bot, CalendarClock, ListChecks } from "lucide-react";
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string; color: string }[] = [
   { value: "TODO",        label: "To Do",       color: "#8B9694" },
@@ -31,12 +32,14 @@ function initials(name: string) {
 export default function TaskDetailModal({
   task,
   boardId,
+  workspaceId,
   members,
   open,
   onClose,
 }: {
   task: Task;
   boardId: string;
+  workspaceId: string;
   members: WorkspaceMember[];
   open: boolean;
   onClose: () => void;
@@ -47,6 +50,11 @@ export default function TaskDetailModal({
   const commentMutation = useAddComment(boardId);
   const assignMutation = useAssignTask(boardId);
   const attachMutation = useAttachFile(boardId);
+  const subtasksMutation = useGenerateSubtasks();
+  const deadlineMutation = useSuggestDeadline();
+  const [aiSubtasks, setAiSubtasks] = useState("");
+  const [aiDeadline, setAiDeadline] = useState("");
+  const [aiError, setAiError] = useState("");
 
   const handleStatusChange = (status: TaskStatus) =>
     statusMutation.mutate({ taskId: task.id, status });
@@ -65,6 +73,36 @@ export default function TaskDetailModal({
   const handleFileChange = async (file: File | undefined) => {
     if (!file) return;
     await attachMutation.mutateAsync({ taskId: task.id, file });
+  };
+
+  const taskPrompt = [task.title, task.description].filter(Boolean).join("\n\n");
+
+  const generateAiSubtasks = async () => {
+    setAiError("");
+    try {
+      const result = await subtasksMutation.mutateAsync({
+        description: taskPrompt,
+        workspaceId,
+      });
+      setAiSubtasks(result);
+    } catch (e) {
+      const err = e as { response?: { data?: { message?: string } } };
+      setAiError(err.response?.data?.message || "Could not draft subtasks.");
+    }
+  };
+
+  const generateAiDeadline = async () => {
+    setAiError("");
+    try {
+      const result = await deadlineMutation.mutateAsync({
+        description: taskPrompt,
+        workspaceId,
+      });
+      setAiDeadline(result);
+    } catch (e) {
+      const err = e as { response?: { data?: { message?: string } } };
+      setAiError(err.response?.data?.message || "Could not suggest a deadline.");
+    }
   };
 
   const priority = PRIORITY[task.priority];
@@ -222,6 +260,56 @@ export default function TaskDetailModal({
                   {task.creator.fullName}
                 </p>
               </div>
+            </div>
+
+            <div className="rounded-xl p-4" style={{ background: "rgba(233,229,215,0.028)", border: "1px solid var(--border)" }}>
+              <div className="mb-3 flex items-center gap-2">
+                <Bot className="h-4 w-4" style={{ color: "var(--accent)" }} />
+                <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
+                  AI planning
+                </p>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={generateAiSubtasks}
+                  disabled={subtasksMutation.isPending || !taskPrompt.trim()}
+                  className="btn-ghost"
+                >
+                  <ListChecks className="h-4 w-4" />
+                  {subtasksMutation.isPending ? "Thinking..." : "Draft subtasks"}
+                </button>
+                <button
+                  type="button"
+                  onClick={generateAiDeadline}
+                  disabled={deadlineMutation.isPending || !taskPrompt.trim()}
+                  className="btn-ghost"
+                >
+                  <CalendarClock className="h-4 w-4" />
+                  {deadlineMutation.isPending ? "Estimating..." : "Suggest deadline"}
+                </button>
+              </div>
+              {aiError && (
+                <p className="mt-3 rounded-xl px-3 py-2 text-sm" style={{ background: "rgba(198,82,74,0.1)", color: "#F0A09A" }}>
+                  {aiError}
+                </p>
+              )}
+              {(aiSubtasks || aiDeadline) && (
+                <div className="mt-4 space-y-4">
+                  {aiSubtasks && (
+                    <div>
+                      <p className="mb-1 text-xs font-bold" style={{ color: "var(--text)" }}>Subtasks</p>
+                      <p className="whitespace-pre-wrap text-sm leading-7" style={{ color: "var(--text-2)" }}>{aiSubtasks}</p>
+                    </div>
+                  )}
+                  {aiDeadline && (
+                    <div>
+                      <p className="mb-1 text-xs font-bold" style={{ color: "var(--text)" }}>Deadline</p>
+                      <p className="whitespace-pre-wrap text-sm leading-7" style={{ color: "var(--text-2)" }}>{aiDeadline}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Comments */}
