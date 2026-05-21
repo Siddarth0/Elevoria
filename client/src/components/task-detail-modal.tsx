@@ -60,7 +60,7 @@ export default function TaskDetailModal({
           style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }}
         />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 z-50 w-150 max-h-[85vh] -translate-x-1/2 -translate-y-1/2 rounded-2xl flex flex-col anim-scale-in"
+          className="fixed top-1/2 left-1/2 z-50 w-[min(94vw,38rem)] max-h-[85vh] -translate-x-1/2 -translate-y-1/2 rounded-2xl flex flex-col anim-scale-in"
           style={{
             background: "var(--surface)",
             border: "1px solid var(--border-md)",
@@ -237,7 +237,7 @@ export default function TaskDetailModal({
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddComment()}
-              placeholder="Add a comment…"
+              placeholder="Add a comment..."
               className="field flex-1"
               style={{ padding: "0.5rem 0.875rem", fontSize: "0.8125rem" }}
             />

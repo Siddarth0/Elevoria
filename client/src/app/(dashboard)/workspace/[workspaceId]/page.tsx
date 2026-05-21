@@ -10,8 +10,8 @@ import { Workspace } from "@/types/workspace";
 import { Board } from "@/types/board";
 
 const BOARD_COLORS = [
-  "#D4A847", "#4A86C8", "#4A8B5E", "#C97B40",
-  "#7B68B5", "#4A8B8B", "#B84F40", "#6B8B4A",
+  "#42D4C8", "#FF8A5B", "#F4C95D", "#69A7FF",
+  "#9A8CFF", "#7BD88F", "#FF5D73", "#B7D86B",
 ];
 
 function getBoardColor(name: string) {
@@ -50,7 +50,7 @@ export default function WorkspacePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between anim-fade-up">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between anim-fade-up rounded-2xl p-6 glass-panel">
         <div>
           <p
             className="text-xs font-medium tracking-widest uppercase mb-2"
@@ -59,13 +59,8 @@ export default function WorkspacePage() {
             {workspace?.name ?? "Workspace"}
           </p>
           <h1
-            className="leading-none"
-            style={{
-              fontFamily: "var(--font-instrument-serif)",
-              fontStyle: "italic",
-              fontSize: "2.25rem",
-              color: "var(--text)",
-            }}
+            className="font-extrabold leading-none text-3xl sm:text-4xl"
+            style={{ color: "var(--text)" }}
           >
             Boards
           </h1>
@@ -119,31 +114,18 @@ export default function WorkspacePage() {
               >
                 <Link
                   href={`/workspace/${workspaceId}/board/${board.id}`}
-                  className="block"
-                >
-                  <div
-                    className="rounded-2xl p-5 transition-all duration-200 cursor-pointer group"
+                className="block group"
+              >
+                <div
+                    className="card p-5 cursor-pointer overflow-hidden relative min-h-36"
                     style={{
-                      background: "var(--surface)",
-                      border: "1px solid var(--border)",
                       borderTop: `3px solid ${color}`,
                     }}
-                    onMouseEnter={(e) => {
-                      const el = e.currentTarget as HTMLElement;
-                      el.style.background = "var(--elevated)";
-                      el.style.transform = "translateY(-2px)";
-                      el.style.boxShadow = "0 8px 32px rgba(0,0,0,0.4)";
-                    }}
-                    onMouseLeave={(e) => {
-                      const el = e.currentTarget as HTMLElement;
-                      el.style.background = "var(--surface)";
-                      el.style.transform = "";
-                      el.style.boxShadow = "";
-                    }}
                   >
+                    <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full blur-2xl" style={{ background: `${color}24` }} />
                     <div className="flex items-start justify-between mb-3">
                       <div
-                        className="w-9 h-9 rounded-xl flex items-center justify-center"
+                        className="w-10 h-10 rounded-xl flex items-center justify-center"
                         style={{ background: `${color}18` }}
                       >
                         <LayoutGrid className="w-4 h-4" style={{ color }} />

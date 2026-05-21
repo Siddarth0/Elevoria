@@ -7,6 +7,7 @@ import { useWorkspaces } from "@/hooks/use-workspaces";
 import { useBoards } from "@/hooks/use-boards";
 import { Workspace } from "@/types/workspace";
 import { Board } from "@/types/board";
+import Logo from "@/components/logo";
 import {
   Search, LayoutDashboard, ChevronDown, Plus,
   Archive, Trash2, Hash, LayoutGrid, Clock,
@@ -36,23 +37,14 @@ export default function Sidebar() {
       className="flex flex-col h-full shrink-0 overflow-hidden"
       style={{
         width: 268,
-        background: "var(--canvas)",
+        background: "rgba(15,19,23,0.84)",
+        backdropFilter: "blur(18px)",
         borderRight: "1px solid var(--border)",
       }}
     >
       {/* Brand */}
       <div className="px-4 pt-5 pb-4 shrink-0">
-        <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
-            style={{ background: "var(--amber)", color: "#fff" }}
-          >
-            E
-          </div>
-          <span className="font-bold text-base" style={{ color: "var(--text)" }}>
-            Projects
-          </span>
-        </Link>
+        <Logo href="/dashboard" size="md" />
       </div>
 
       {/* Search */}
@@ -76,7 +68,7 @@ export default function Sidebar() {
               fontFamily: "inherit",
             }}
           >
-            ⌘ S
+            Ctrl K
           </kbd>
         </div>
       </div>
@@ -145,7 +137,7 @@ export default function Sidebar() {
           active={false}
           icon={<Archive className="w-4 h-4" />}
         >
-          Archive Projects
+          Archive
         </SidebarNavLink>
 
         <SidebarNavLink
@@ -153,14 +145,14 @@ export default function Sidebar() {
           active={false}
           icon={<Trash2 className="w-4 h-4" />}
         >
-          Delete Projects
+          Trash
         </SidebarNavLink>
 
         <div className="pt-2 px-1">
           <Link href="/dashboard">
             <button className="btn-primary w-full">
               <Plus className="w-4 h-4" />
-              New Projects
+              New Workspace
             </button>
           </Link>
         </div>

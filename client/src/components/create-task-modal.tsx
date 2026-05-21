@@ -3,9 +3,11 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useState } from "react";
 import { useCreateTask } from "@/hooks/use-create-task";
+import { updateTaskStatus } from "@/services/task.service";
 import { Plus, X } from "lucide-react";
 import { TaskPriority, TaskStatus } from "@/types/task";
 import { WorkspaceMember } from "@/types/workspace";
+import { useQueryClient } from "@tanstack/react-query";
 
 const PRIORITIES: { value: TaskPriority; label: string; color: string }[] = [
   { value: "LOW",    label: "Low",    color: "#636363" },
@@ -31,6 +33,7 @@ export default function CreateTaskModal({
   const [assigneeId, setAssigneeId] = useState("");
 
   const mutation = useCreateTask(boardId);
+  const queryClient = useQueryClient();
 
   const [error, setError] = useState("");
 
@@ -38,7 +41,7 @@ export default function CreateTaskModal({
     if (!title.trim()) return;
     setError("");
     try {
-      await mutation.mutateAsync({
+      const createdTask = await mutation.mutateAsync({
         title: title.trim(),
         description: description || undefined,
         priority,
@@ -46,6 +49,10 @@ export default function CreateTaskModal({
         boardId,
         assigneeId: assigneeId || undefined,
       });
+      if (defaultStatus !== "TODO") {
+        await updateTaskStatus({ taskId: createdTask.id, status: defaultStatus });
+        queryClient.invalidateQueries({ queryKey: ["tasks", boardId] });
+      }
       setTitle("");
       setDescription("");
       setPriority("MEDIUM");
@@ -84,7 +91,7 @@ export default function CreateTaskModal({
           style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
         />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 z-50 w-120 -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 anim-scale-in"
+          className="fixed top-1/2 left-1/2 z-50 w-[min(92vw,30rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 anim-scale-in"
           style={{
             background: "var(--surface)",
             border: "1px solid var(--border-md)",
@@ -94,8 +101,8 @@ export default function CreateTaskModal({
           <div className="flex items-center justify-between mb-5">
             <Dialog.Title
               style={{
-                fontFamily: "var(--font-instrument-serif)",
                 fontSize: "1.375rem",
+                fontWeight: 800,
                 color: "var(--text)",
               }}
             >
@@ -156,7 +163,7 @@ export default function CreateTaskModal({
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Add more context… (optional)"
+                placeholder="Add more context... (optional)"
                 rows={3}
                 className="field resize-none"
               />
@@ -227,7 +234,7 @@ export default function CreateTaskModal({
               disabled={mutation.isPending || !title.trim()}
               className="btn-primary w-full mt-1"
             >
-              {mutation.isPending ? "Creating…" : "Create Task"}
+              {mutation.isPending ? "Creating..." : "Create Task"}
             </button>
           </div>
         </Dialog.Content>

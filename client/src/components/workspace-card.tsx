@@ -18,34 +18,25 @@ export default function WorkspaceCard({ workspace }: { workspace: Workspace }) {
   return (
     <Link href={`/workspace/${workspace.id}`} className="block group">
       <div
-        className="rounded-2xl p-5 transition-all duration-150 cursor-pointer"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-        onMouseEnter={(e) => {
-          const el = e.currentTarget as HTMLElement;
-          el.style.background = "var(--elevated)";
-          el.style.borderColor = "var(--border-md)";
-          el.style.transform = "translateY(-2px)";
-          el.style.boxShadow = "0 8px 32px rgba(0,0,0,0.5)";
-        }}
-        onMouseLeave={(e) => {
-          const el = e.currentTarget as HTMLElement;
-          el.style.background = "var(--surface)";
-          el.style.borderColor = "var(--border)";
-          el.style.transform = "";
-          el.style.boxShadow = "";
-        }}
+        className="card p-5 cursor-pointer overflow-hidden relative min-h-38"
       >
+        <div
+          className="absolute -right-10 -top-10 h-24 w-24 rounded-full blur-2xl opacity-70 transition-opacity group-hover:opacity-100"
+          style={{ background: `${color}33` }}
+        />
         <div className="flex items-start justify-between mb-4">
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold"
+            className="w-11 h-11 rounded-xl flex items-center justify-center text-base font-extrabold"
             style={{ background: `${color}1A`, color }}
           >
             {workspace.name[0].toUpperCase()}
           </div>
-          <div className="w-2 h-2 rounded-full mt-1" style={{ background: color }} />
+          <div className="h-7 rounded-full px-2.5 text-[11px] font-bold grid place-items-center" style={{ background: `${color}18`, color }}>
+            Live
+          </div>
         </div>
 
-        <h2 className="font-semibold text-sm" style={{ color: "var(--text)" }}>
+        <h2 className="font-bold text-base leading-snug" style={{ color: "var(--text)" }}>
           {workspace.name}
         </h2>
 
@@ -56,7 +47,7 @@ export default function WorkspaceCard({ workspace }: { workspace: Workspace }) {
           /{workspace.slug}
         </p>
 
-        <p className="text-xs mt-4" style={{ color: "var(--text-3)" }}>
+        <p className="text-xs mt-5" style={{ color: "var(--text-3)" }}>
           {new Date(workspace.createdAt).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",

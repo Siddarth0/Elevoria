@@ -18,10 +18,10 @@ type Column = {
 };
 
 const COLUMNS: Column[] = [
-  { status: "TODO",        label: "To Do",       color: "#6B6B80" },
-  { status: "IN_PROGRESS", label: "In Progress",  color: "#7A70F0" },
+  { status: "TODO",        label: "To Do",       color: "#A7B5B4" },
+  { status: "IN_PROGRESS", label: "In Progress",  color: "#42D4C8" },
   { status: "REVIEW",      label: "In Review",    color: "#F5A623" },
-  { status: "COMPLETED",   label: "Completed",    color: "#22D1A8" },
+  { status: "COMPLETED",   label: "Completed",    color: "#7BD88F" },
 ];
 
 export default function BoardPage() {
@@ -63,15 +63,14 @@ export default function BoardPage() {
 
   return (
     <div className="flex flex-col h-full gap-5">
-      {/* Page header */}
-      <div className="shrink-0 anim-fade-up">
+      <div className="shrink-0 anim-fade-up rounded-2xl p-5 glass-panel">
         <p
           className="text-xs font-semibold tracking-widest uppercase mb-1"
           style={{ color: "var(--text-3)" }}
         >
           Board view
         </p>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           {COLUMNS.map((col) => (
             <div
               key={col.status}
@@ -93,8 +92,11 @@ export default function BoardPage() {
         {COLUMNS.map((col) => {
           const colTasks = grouped[col.status];
           return (
-            <div key={col.status} className="w-72 min-w-72 flex flex-col gap-3">
-              {/* Column header */}
+            <div
+              key={col.status}
+              className="w-72 min-w-72 flex flex-col gap-3 rounded-2xl p-3"
+              style={{ background: "rgba(255,255,255,0.025)", border: "1px solid var(--border)" }}
+            >
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
                   <span
@@ -146,7 +148,6 @@ export default function BoardPage() {
                 </div>
               </div>
 
-              {/* Cards */}
               <div className="flex flex-col gap-3">
                 {colTasks.map((task) => (
                   <TaskCard
@@ -157,7 +158,6 @@ export default function BoardPage() {
                 ))}
               </div>
 
-              {/* Add task */}
               <CreateTaskModal
                 boardId={boardId}
                 defaultStatus={col.status}

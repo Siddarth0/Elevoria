@@ -8,9 +8,9 @@ export default function DashboardLayout({
 }) {
   return (
     <ProtectedRoute>
-      <div className="flex h-screen overflow-hidden" style={{ background: "var(--canvas)" }}>
+      <div className="flex h-screen overflow-hidden" style={{ background: "transparent" }}>
         <Sidebar />
-        <main className="flex-1 overflow-auto p-8">
+        <main className="flex-1 overflow-auto p-5 sm:p-8">
           {children}
         </main>
       </div>

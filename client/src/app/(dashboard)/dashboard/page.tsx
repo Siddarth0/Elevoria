@@ -4,7 +4,7 @@ import CreateWorkspaceModal from "@/components/create-workspace-modal";
 import WorkspaceCard from "@/components/workspace-card";
 import { useWorkspaces } from "@/hooks/use-workspaces";
 import { Workspace } from "@/types/workspace";
-import { Folder } from "lucide-react";
+import { Folder, Layers3, Sparkles, Users } from "lucide-react";
 
 export default function DashboardPage() {
   const { data, isLoading } = useWorkspaces();
@@ -35,7 +35,56 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between anim-fade-up">
+      <div className="anim-fade-up rounded-2xl p-6 sm:p-7 glass-panel overflow-hidden relative">
+        <div
+          className="absolute right-8 top-6 hidden h-24 w-24 rounded-full blur-3xl sm:block"
+          style={{ background: "rgba(66,212,200,0.22)" }}
+        />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div
+              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold mb-4"
+              style={{ background: "var(--accent-dim)", color: "var(--accent)" }}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Overview
+            </div>
+            <h1 className="font-extrabold leading-tight text-3xl sm:text-4xl" style={{ color: "var(--text)" }}>
+              Your workspaces
+            </h1>
+            <p className="mt-2 max-w-xl text-sm" style={{ color: "var(--text-2)" }}>
+              Pick a workspace, open a board, and keep the next piece of work moving.
+            </p>
+          </div>
+          <CreateWorkspaceModal />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { label: "Workspaces", value: workspaces.length, icon: Layers3, color: "var(--accent)" },
+          { label: "Active boards", value: "Live", icon: Folder, color: "var(--accent-3)" },
+          { label: "Team ready", value: "Synced", icon: Users, color: "var(--accent-2)" },
+        ].map((item, i) => (
+          <div key={item.label} className="card p-4 anim-fade-up" style={{ animationDelay: `${(i + 1) * 0.05}s` }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest" style={{ color: "var(--text-3)" }}>
+                  {item.label}
+                </p>
+                <p className="mt-1 text-xl font-extrabold" style={{ color: "var(--text)" }}>
+                  {item.value}
+                </p>
+              </div>
+              <div className="grid h-10 w-10 place-items-center rounded-xl" style={{ background: `${item.color}1F`, color: item.color }}>
+                <item.icon className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center justify-between anim-fade-up d2">
         <div>
           <p
             className="text-xs font-semibold tracking-widest uppercase mb-2"
@@ -47,11 +96,8 @@ export default function DashboardPage() {
             className="font-extrabold leading-none"
             style={{ fontSize: "1.875rem", color: "var(--text)", letterSpacing: "-0.02em" }}
           >
-            Your Workspaces
+            Workspace library
           </h1>
-        </div>
-        <div className="anim-fade-up d2">
-          <CreateWorkspaceModal />
         </div>
       </div>
 

@@ -40,7 +40,7 @@ export default function CreateBoardModal({ workspaceId }: { workspaceId: string 
           style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}
         />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 z-50 w-105 -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 anim-scale-in"
+          className="fixed top-1/2 left-1/2 z-50 w-[min(92vw,26rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl p-6 anim-scale-in"
           style={{
             background: "var(--surface)",
             border: "1px solid var(--border-md)",
@@ -50,8 +50,8 @@ export default function CreateBoardModal({ workspaceId }: { workspaceId: string 
           <div className="flex items-center justify-between mb-5">
             <Dialog.Title
               style={{
-                fontFamily: "var(--font-instrument-serif)",
                 fontSize: "1.375rem",
+                fontWeight: 800,
                 color: "var(--text)",
               }}
             >
@@ -97,7 +97,7 @@ export default function CreateBoardModal({ workspaceId }: { workspaceId: string 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && create()}
-                placeholder="e.g. Sprint 1, Backlog…"
+                placeholder="e.g. Sprint 1, Backlog..."
                 className="field"
                 autoFocus
               />
@@ -108,7 +108,7 @@ export default function CreateBoardModal({ workspaceId }: { workspaceId: string 
               disabled={mutation.isPending || !name.trim()}
               className="btn-primary w-full"
             >
-              {mutation.isPending ? "Creating…" : "Create Board"}
+              {mutation.isPending ? "Creating..." : "Create Board"}
             </button>
           </div>
         </Dialog.Content>

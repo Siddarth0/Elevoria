@@ -5,7 +5,8 @@ import { useAuthStore } from "@/store/auth.store";
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import Logo from "@/components/logo";
 
 export default function LoginPage() {
   const setUser = useAuthStore((s) => s.setUser);
@@ -22,7 +23,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await api.post("/auth/login", { email, password });
+      const res = await api.post("/auth/login", { email: email.trim(), password });
       setUser(res.data.data.user);
       setAccessToken(res.data.data.accessToken);
       router.push("/dashboard");
@@ -36,37 +37,33 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen" style={{ background: "var(--canvas)" }}>
-      {/* Art panel */}
       <div className="auth-art hidden lg:flex lg:w-[46%] flex-col justify-between p-12 shrink-0">
-        <div className="flex items-center gap-2.5 relative z-10">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold"
-            style={{ background: "var(--amber)", color: "#fff" }}
-          >
-            E
-          </div>
-          <span className="font-bold" style={{ color: "var(--text)" }}>
-            Elevoria
-          </span>
-        </div>
+        <Logo href="/" size="md" className="relative z-10" />
 
         <div className="relative z-10">
-          <h1
-            className="font-extrabold leading-tight mb-4"
-            style={{
-              fontSize: "clamp(2.2rem, 5vw, 3.5rem)",
-              color: "var(--text)",
-              letterSpacing: "-0.02em",
-            }}
+          <div
+            className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold mb-5"
+            style={{ background: "rgba(255,255,255,0.06)", color: "var(--accent)" }}
           >
-            Manage your<br />
-            <span style={{ color: "var(--amber)" }}>projects</span><br />
-            smarter.
+            <Sparkles className="w-3.5 h-3.5" />
+            AI workspace command center
+          </div>
+          <h1
+            className="font-extrabold leading-tight mb-5"
+            style={{ fontSize: "clamp(2.2rem, 5vw, 3.5rem)", color: "var(--text)" }}
+          >
+            Organize the work.<br />
+            Keep the team<br />
+            <span style={{ color: "var(--accent)" }}>in motion.</span>
           </h1>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
-            Collaborate, organize, and ship faster<br />
-            with AI-powered productivity tools.
-          </p>
+          <div className="grid gap-3 text-sm" style={{ color: "var(--text-2)" }}>
+            {["Plan boards with less friction", "Track tasks across every stage", "Keep decisions and comments together"].map((item) => (
+              <div key={item} className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" style={{ color: "var(--accent)" }} />
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         <p
@@ -77,28 +74,14 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Form panel */}
       <div
-        className="flex-1 flex items-center justify-center p-8"
-        style={{ borderLeft: "1px solid var(--border)", background: "var(--surface)" }}
+        className="flex-1 flex items-center justify-center p-6 sm:p-8"
+        style={{ borderLeft: "1px solid var(--border)", background: "rgba(20,26,32,0.82)" }}
       >
-        <div className="w-full max-w-90 anim-fade-up">
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold"
-              style={{ background: "var(--amber)", color: "#fff" }}
-            >
-              E
-            </div>
-            <span className="font-bold" style={{ color: "var(--text)" }}>
-              Elevoria
-            </span>
-          </div>
+        <div className="w-full max-w-[24rem] anim-fade-up glass-panel rounded-2xl p-6 sm:p-8">
+          <Logo href="/" size="sm" className="mb-8 lg:hidden" />
 
-          <h2
-            className="font-extrabold mb-1"
-            style={{ fontSize: "1.75rem", color: "var(--text)", letterSpacing: "-0.02em" }}
-          >
+          <h2 className="font-extrabold mb-1 text-[1.75rem]" style={{ color: "var(--text)" }}>
             Welcome back
           </h2>
           <p className="text-sm mb-8" style={{ color: "var(--text-2)" }}>
@@ -109,9 +92,9 @@ export default function LoginPage() {
             <div
               className="mb-5 px-4 py-3 rounded-xl text-sm font-medium"
               style={{
-                background: "rgba(255,82,82,0.1)",
-                border: "1px solid rgba(255,82,82,0.25)",
-                color: "#FF7070",
+                background: "rgba(255,93,115,0.1)",
+                border: "1px solid rgba(255,93,115,0.28)",
+                color: "#ff9aaa",
               }}
             >
               {error}
@@ -120,12 +103,7 @@ export default function LoginPage() {
 
           <div className="space-y-3">
             <div>
-              <label
-                className="block text-xs font-semibold mb-1.5 tracking-widest uppercase"
-                style={{ color: "var(--text-3)" }}
-              >
-                Email
-              </label>
+              <label className="label">Email</label>
               <input
                 type="email"
                 value={email}
@@ -135,29 +113,22 @@ export default function LoginPage() {
               />
             </div>
             <div>
-              <label
-                className="block text-xs font-semibold mb-1.5 tracking-widest uppercase"
-                style={{ color: "var(--text-3)" }}
-              >
-                Password
-              </label>
+              <label className="label">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 className="field"
                 onKeyDown={(e) => e.key === "Enter" && login()}
               />
             </div>
           </div>
 
-          <button
-            onClick={login}
-            disabled={loading}
-            className="btn-primary w-full mt-5"
-          >
-            {loading ? "Signing in…" : (
+          <button onClick={login} disabled={loading} className="btn-primary w-full mt-5">
+            {loading ? (
+              "Signing in..."
+            ) : (
               <>
                 Sign in
                 <ArrowRight className="w-4 h-4" />
@@ -167,11 +138,7 @@ export default function LoginPage() {
 
           <p className="mt-6 text-sm text-center" style={{ color: "var(--text-3)" }}>
             No account?{" "}
-            <Link
-              href="/register"
-              className="font-semibold transition-colors"
-              style={{ color: "var(--amber)" }}
-            >
+            <Link href="/register" className="font-semibold transition-colors" style={{ color: "var(--accent)" }}>
               Create one
             </Link>
           </p>

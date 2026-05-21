@@ -68,26 +68,12 @@ export default function TaskCard({
   return (
     <div
       onClick={onClick}
-      className="rounded-2xl p-4 cursor-pointer group transition-all duration-150 relative"
-      style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-      }}
-      onMouseEnter={(e) => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.background = "var(--elevated)";
-        el.style.borderColor = "var(--border-md)";
-        el.style.transform = "translateY(-2px)";
-        el.style.boxShadow = "0 8px 28px rgba(0,0,0,0.45)";
-      }}
-      onMouseLeave={(e) => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.background = "var(--surface)";
-        el.style.borderColor = "var(--border)";
-        el.style.transform = "";
-        el.style.boxShadow = "";
-      }}
+      className="card p-4 cursor-pointer group relative overflow-hidden"
     >
+      <div
+        className="absolute left-0 top-0 h-full w-1 opacity-80"
+        style={{ background: p.color }}
+      />
       {/* Top row */}
       <div className="flex items-center justify-between mb-3">
         <span
