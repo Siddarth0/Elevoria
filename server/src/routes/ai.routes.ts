@@ -6,11 +6,56 @@ const router = Router();
 
 /**
  * @openapi
+ * components:
+ *   schemas:
+ *     AiSummaryResult:
+ *       type: object
+ *       properties:
+ *         scope: { type: string, enum: [task, board, workspace, text] }
+ *         title: { type: string }
+ *         summary: { type: string }
+ *         highlights:
+ *           type: array
+ *           items: { type: string }
+ *         unavailable: { type: boolean, nullable: true }
+ *     AiSubtasksResult:
+ *       type: object
+ *       properties:
+ *         scope: { type: string, enum: [task, board, workspace, text] }
+ *         items:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               taskTitle: { type: string }
+ *               subtasks:
+ *                 type: array
+ *                 items: { type: string }
+ *         unavailable: { type: boolean, nullable: true }
+ *     AiDeadlineResult:
+ *       type: object
+ *       properties:
+ *         scope: { type: string, enum: [task, board, workspace, text] }
+ *         items:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               taskTitle: { type: string }
+ *               suggestedDate: { type: string, example: "2026-06-12" }
+ *               reason: { type: string }
+ *         unavailable: { type: boolean, nullable: true }
+ */
+
+/**
+ * @openapi
  * /ai/summarize:
  *   post:
- *     tags:
- *       - AI
- *     summary: Summarize document content using AI
+ *     tags: [AI]
+ *     summary: Summarize the active scope (workspace / board / task) or pasted text
+ *     description: |
+ *       Scope is resolved in priority order: `taskId` → `boardId` → `content` text → `workspaceId`.
+ *       Returns a structured JSON summary keyed by the resolved scope.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -19,14 +64,12 @@ const router = Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [content, workspaceId]
+ *             required: [workspaceId]
  *             properties:
- *               content:
- *                 type: string
- *                 example: "Long document text to summarize..."
- *               workspaceId:
- *                 type: string
- *                 format: uuid
+ *               workspaceId: { type: string, format: uuid }
+ *               boardId:     { type: string, format: uuid, nullable: true }
+ *               taskId:      { type: string, format: uuid, nullable: true }
+ *               content:     { type: string, nullable: true, description: "Optional refinement, or the text to summarize when no scope IDs are given." }
  *     responses:
  *       200:
  *         description: AI summary generated
@@ -40,10 +83,8 @@ const router = Router();
  *                     data:
  *                       type: object
  *                       properties:
- *                         result:
- *                           type: string
- *       401:
- *         description: Unauthorized
+ *                         result: { $ref: '#/components/schemas/AiSummaryResult' }
+ *       401: { description: Unauthorized }
  */
 router.post("/summarize", authMiddleware, summarizeDocument);
 
@@ -51,9 +92,11 @@ router.post("/summarize", authMiddleware, summarizeDocument);
  * @openapi
  * /ai/subtasks:
  *   post:
- *     tags:
- *       - AI
- *     summary: Generate subtasks from a task description using AI
+ *     tags: [AI]
+ *     summary: Draft subtasks scoped to a task, board, workspace, or pasted text
+ *     description: |
+ *       Scope is resolved in priority order: `taskId` → `boardId` → `description` text → `workspaceId`.
+ *       For board/workspace scopes the response contains one item per target task (up to 5 highest-priority open tasks).
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -62,14 +105,12 @@ router.post("/summarize", authMiddleware, summarizeDocument);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [description, workspaceId]
+ *             required: [workspaceId]
  *             properties:
- *               description:
- *                 type: string
- *                 example: Build a user authentication system with JWT
- *               workspaceId:
- *                 type: string
- *                 format: uuid
+ *               workspaceId: { type: string, format: uuid }
+ *               boardId:     { type: string, format: uuid, nullable: true }
+ *               taskId:      { type: string, format: uuid, nullable: true }
+ *               description: { type: string, nullable: true, description: "Optional refinement, or the text to break down when no scope IDs are given." }
  *     responses:
  *       200:
  *         description: AI subtasks generated
@@ -83,10 +124,8 @@ router.post("/summarize", authMiddleware, summarizeDocument);
  *                     data:
  *                       type: object
  *                       properties:
- *                         result:
- *                           type: string
- *       401:
- *         description: Unauthorized
+ *                         result: { $ref: '#/components/schemas/AiSubtasksResult' }
+ *       401: { description: Unauthorized }
  */
 router.post("/subtasks", authMiddleware, generateSubtasks);
 
@@ -94,9 +133,11 @@ router.post("/subtasks", authMiddleware, generateSubtasks);
  * @openapi
  * /ai/deadline:
  *   post:
- *     tags:
- *       - AI
- *     summary: Suggest a deadline for a task using AI
+ *     tags: [AI]
+ *     summary: Suggest deadlines scoped to a task, board, workspace, or pasted text
+ *     description: |
+ *       Scope is resolved in priority order: `taskId` → `boardId` → `description` text → `workspaceId`.
+ *       For board/workspace scopes the response covers up to 5 undated open tasks.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -105,17 +146,15 @@ router.post("/subtasks", authMiddleware, generateSubtasks);
  *         application/json:
  *           schema:
  *             type: object
- *             required: [description, workspaceId]
+ *             required: [workspaceId]
  *             properties:
- *               description:
- *                 type: string
- *                 example: Implement login and registration with email verification
- *               workspaceId:
- *                 type: string
- *                 format: uuid
+ *               workspaceId: { type: string, format: uuid }
+ *               boardId:     { type: string, format: uuid, nullable: true }
+ *               taskId:      { type: string, format: uuid, nullable: true }
+ *               description: { type: string, nullable: true, description: "Optional refinement, or the text to estimate against when no scope IDs are given." }
  *     responses:
  *       200:
- *         description: AI deadline suggestion generated
+ *         description: AI deadline suggestions generated
  *         content:
  *           application/json:
  *             schema:
@@ -126,10 +165,8 @@ router.post("/subtasks", authMiddleware, generateSubtasks);
  *                     data:
  *                       type: object
  *                       properties:
- *                         result:
- *                           type: string
- *       401:
- *         description: Unauthorized
+ *                         result: { $ref: '#/components/schemas/AiDeadlineResult' }
+ *       401: { description: Unauthorized }
  */
 router.post("/deadline", authMiddleware, suggestDeadline);
 
