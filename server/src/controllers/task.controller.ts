@@ -5,20 +5,21 @@ import { ApiResponse } from "@/utils/apiResponse";
 import { ApiError } from "@/utils/apiError";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 import { emitWorkspaceEvent } from "@/services/realtime.service";
+import { assertWorkspaceMember } from "@/services/membership.service";
 
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
   const { title, description, priority, dueDate, boardId, assigneeId } =
     req.body;
 
-  const board = await prisma.board.findUnique({
-    where: { id: boardId },
-    include: { workspace: { include: { members: true } } },
-  });
+  if (!userId) throw new ApiError(401, "Unauthorized");
 
-  const isMember = board?.workspace.members.some((m) => m.userId === userId);
+  await assertWorkspaceMember(userId, { boardId });
 
-  if (!isMember) throw new ApiError(403, "Forbidden");
+  // An assignee, if given, must also belong to the workspace.
+  if (assigneeId) {
+    await assertWorkspaceMember(assigneeId, { boardId });
+  }
 
   const task = await prisma.task.create({
     data: {
@@ -37,7 +38,12 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
 
 export const getTasksByBoard = asyncHandler(
   async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
     const { boardId } = req.params;
+
+    if (!userId) throw new ApiError(401, "Unauthorized");
+
+    await assertWorkspaceMember(userId, { boardId: String(boardId) });
 
     const tasks = await prisma.task.findMany({
       where: { boardId: String(boardId) },
@@ -59,7 +65,12 @@ export const getTasksByBoard = asyncHandler(
 
 export const updateTaskStatus = asyncHandler(
   async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
     const { taskId, status } = req.body;
+
+    if (!userId) throw new ApiError(401, "Unauthorized");
+
+    await assertWorkspaceMember(userId, { taskId });
 
     const updated = await prisma.task.update({
       where: { id: taskId },
@@ -77,14 +88,23 @@ export const updateTaskStatus = asyncHandler(
 );
 
 export const assignTask = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
   const { taskId, assigneeId } = req.body;
+
+  if (!userId) throw new ApiError(401, "Unauthorized");
+
+  // Caller must be a member; the assignee must belong to the same workspace.
+  await assertWorkspaceMember(userId, { taskId });
+  if (assigneeId) {
+    await assertWorkspaceMember(assigneeId, { taskId });
+  }
 
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: { assigneeId },
   });
 
-  res.json(new ApiResponse("Task assigned succesfully", updated));
+  res.json(new ApiResponse("Task assigned successfully", updated));
 });
 
 export const addCommentToTask = asyncHandler(
@@ -93,6 +113,8 @@ export const addCommentToTask = asyncHandler(
     const { taskId, content } = req.body;
 
     if (!userId) throw new ApiError(401, "Unauthorized");
+
+    await assertWorkspaceMember(userId, { taskId });
 
     const comment = await prisma.comment.create({
       data: {
@@ -129,24 +151,7 @@ export const attachFileToTask = asyncHandler(
     if (!userId) throw new ApiError(401, "Unauthorized");
     if (!req.file) throw new ApiError(400, "No file uploaded");
 
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        board: {
-          include: {
-            workspace: {
-              include: { members: true },
-            },
-          },
-        },
-      },
-    });
-
-    const isMember = task?.board.workspace.members.some(
-      (m) => m.userId === userId,
-    );
-
-    if (!task || !isMember) throw new ApiError(403, "Forbidden");
+    await assertWorkspaceMember(userId, { taskId });
 
     const uploaded = await uploadToCloudinary(req.file.buffer);
 

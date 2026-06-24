@@ -8,6 +8,7 @@ import {
   generateSubtasksService,
   generateDeadlineService,
 } from "@/services/ai.service";
+import { assertWorkspaceMember } from "@/services/membership.service";
 
 function buildContext(req: Request, textKey: "content" | "description"): AiContext {
   const { workspaceId, boardId, taskId } = req.body as {
@@ -34,6 +35,7 @@ export const summarizeDocument = asyncHandler(async (req: Request, res: Response
   if (!userId) throw new ApiError(401, "Unauthorized");
 
   const ctx = buildContext(req, "content");
+  await assertWorkspaceMember(userId, { workspaceId: ctx.workspaceId });
   const result = await generateSummaryService(ctx, userId);
 
   res.json(new ApiResponse("AI summary generated", { result }));
@@ -44,6 +46,7 @@ export const generateSubtasks = asyncHandler(async (req: Request, res: Response)
   if (!userId) throw new ApiError(401, "Unauthorized");
 
   const ctx = buildContext(req, "description");
+  await assertWorkspaceMember(userId, { workspaceId: ctx.workspaceId });
   const result = await generateSubtasksService(ctx, userId);
 
   res.json(new ApiResponse("AI subtasks generated", { result }));
@@ -54,6 +57,7 @@ export const suggestDeadline = asyncHandler(async (req: Request, res: Response) 
   if (!userId) throw new ApiError(401, "Unauthorized");
 
   const ctx = buildContext(req, "description");
+  await assertWorkspaceMember(userId, { workspaceId: ctx.workspaceId });
   const result = await generateDeadlineService(ctx, userId);
 
   res.json(new ApiResponse("AI deadline suggestion generated", { result }));
