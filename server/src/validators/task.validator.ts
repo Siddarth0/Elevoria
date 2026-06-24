@@ -27,3 +27,14 @@ export const addCommentSchema = z.object({
 export const attachFileSchema = z.object({
   taskId: z.string().uuid(),
 });
+
+export const updateTaskSchema = z
+  .object({
+    title: z.string().min(2).optional(),
+    description: z.string().nullable().optional(),
+    priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).optional(),
+    dueDate: z.string().nullable().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided",
+  });

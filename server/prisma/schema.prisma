@@ -67,6 +67,7 @@ model User {
   notifications       Notification[]
   subscriptions       Subscription[]
   aiHistories         AIHistory[]
+  activityLogs        ActivityLog[]
 }
 
 //-----WORKSPACE TABLE-------
@@ -86,6 +87,7 @@ model Workspace {
   subscriptions Subscription[]
   aiHistories   AIHistory[]
   invites       WorkspaceInvite[]
+  activityLogs  ActivityLog[]
 }
 
 //-------WORKSPACE INVITE TABLE-------
@@ -175,7 +177,11 @@ model Attachment {
   id          String      @id @default(uuid())
   fileName    String
   fileUrl     String
+  publicId    String?
+  fileSize    Int?
+  mimeType    String?
   taskId      String
+  uploadedById String?
   uploadedAt  DateTime    @default(now())
 
   task        Task        @relation(fields: [taskId], references: [id], onDelete: Cascade)
@@ -206,6 +212,24 @@ model Subscription {
 
   user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace       Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+//---------ACTIVITY LOG TABLE---------
+
+model ActivityLog {
+  id           String      @id @default(uuid())
+  workspaceId  String
+  userId       String
+  action       String
+  entityType   String
+  entityId     String?
+  meta         String?
+  createdAt    DateTime    @default(now())
+
+  workspace    Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, createdAt])
 }
 
 //---------AI HISTORY TABLE---------

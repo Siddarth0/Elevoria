@@ -6,6 +6,10 @@ import {
   assignTask,
   addCommentToTask,
   attachFileToTask,
+  updateTask,
+  deleteTask,
+  deleteComment,
+  deleteAttachment,
 } from "@/controllers/task.controller";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 import { validate } from "@/middlewares/validate.middleware";
@@ -15,6 +19,7 @@ import {
   assignTaskSchema,
   addCommentSchema,
   attachFileSchema,
+  updateTaskSchema,
 } from "@/validators/task.validator";
 import { upload } from "@/middlewares/upload.middleware";
 
@@ -222,9 +227,89 @@ router.post("/comment", authMiddleware, validate(addCommentSchema), addCommentTo
 router.post(
   "/attach",
   authMiddleware,
-  upload.single("file"),
+  // Accept any file field(s) so single "file" and multiple "files" both work.
+  upload.any(),
   validate(attachFileSchema),
   attachFileToTask,
 );
+
+/**
+ * @openapi
+ * /task/{id}:
+ *   patch:
+ *     tags: [Task]
+ *     summary: Update a task's title, description, priority, or due date
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title: { type: string }
+ *               description: { type: string, nullable: true }
+ *               priority: { type: string, enum: [LOW, MEDIUM, HIGH, URGENT] }
+ *               dueDate: { type: string, format: date-time, nullable: true }
+ *     responses:
+ *       200: { description: Task updated }
+ *       403: { description: Forbidden }
+ *   delete:
+ *     tags: [Task]
+ *     summary: Delete a task (creator or manager/owner)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Task deleted }
+ *       403: { description: Forbidden }
+ */
+router.patch("/:id", authMiddleware, validate(updateTaskSchema), updateTask);
+router.delete("/:id", authMiddleware, deleteTask);
+
+/**
+ * @openapi
+ * /task/comment/{id}:
+ *   delete:
+ *     tags: [Task]
+ *     summary: Delete a comment (author or manager/owner)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Comment deleted }
+ */
+router.delete("/comment/:id", authMiddleware, deleteComment);
+
+/**
+ * @openapi
+ * /task/attachment/{id}:
+ *   delete:
+ *     tags: [Task]
+ *     summary: Delete an attachment (uploader or manager/owner)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Attachment deleted }
+ */
+router.delete("/attachment/:id", authMiddleware, deleteAttachment);
 
 export default router;

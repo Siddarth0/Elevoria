@@ -3,10 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { ApiResponse } from "@/utils/apiResponse";
 import { ApiError } from "@/utils/apiError";
-import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} from "@/utils/uploadToCloudinary";
 import { emitWorkspaceEvent } from "@/services/realtime.service";
 import { assertWorkspaceMember } from "@/services/membership.service";
 import { notifyUser } from "@/services/notification.service";
+import { logActivity } from "@/services/activity.service";
 
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
@@ -48,13 +52,30 @@ export const getTasksByBoard = asyncHandler(
   async (req: Request, res: Response) => {
     const userId = req.user?.userId;
     const { boardId } = req.params;
+    const { status, assigneeId, priority, q } = req.query as {
+      status?: string;
+      assigneeId?: string;
+      priority?: string;
+      q?: string;
+    };
 
     if (!userId) throw new ApiError(401, "Unauthorized");
 
     await assertWorkspaceMember(userId, { boardId: String(boardId) });
 
     const tasks = await prisma.task.findMany({
-      where: { boardId: String(boardId) },
+      where: {
+        boardId: String(boardId),
+        ...(status && { status: status as never }),
+        ...(priority && { priority: priority as never }),
+        ...(assigneeId && { assigneeId }),
+        ...(q && {
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+          ],
+        }),
+      },
       include: {
         assignee: true,
         creator: true,
@@ -185,22 +206,197 @@ export const attachFileToTask = asyncHandler(
     const { taskId } = req.body;
 
     if (!userId) throw new ApiError(401, "Unauthorized");
-    if (!req.file) throw new ApiError(400, "No file uploaded");
+
+    // Accept both single ("file") and multiple ("files") field names.
+    const files = [
+      ...((req.files as Express.Multer.File[] | undefined) ?? []),
+      ...(req.file ? [req.file] : []),
+    ];
+    if (files.length === 0) throw new ApiError(400, "No file uploaded");
 
     await assertWorkspaceMember(userId, { taskId });
 
-    const uploaded = await uploadToCloudinary(req.file.buffer);
-
-    const attachment = await prisma.attachment.create({
-      data: {
-        taskId,
-        fileName: uploaded.original_filename,
-        fileUrl: uploaded.secure_url,
-      },
-    });
+    const attachments = await Promise.all(
+      files.map(async (file) => {
+        const uploaded = await uploadToCloudinary(file.buffer);
+        return prisma.attachment.create({
+          data: {
+            taskId,
+            fileName: file.originalname || uploaded.original_filename,
+            fileUrl: uploaded.secure_url,
+            publicId: uploaded.public_id,
+            fileSize: uploaded.bytes,
+            mimeType: file.mimetype,
+            uploadedById: userId,
+          },
+        });
+      }),
+    );
 
     res
       .status(201)
-      .json(new ApiResponse("Attachment uploaded successfully", attachment));
+      .json(
+        new ApiResponse("Attachment(s) uploaded successfully", attachments),
+      );
+  },
+);
+
+export const updateTask = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const { id } = req.params;
+  const { title, description, priority, dueDate } = req.body;
+
+  if (!userId) throw new ApiError(401, "Unauthorized");
+
+  await assertWorkspaceMember(userId, { taskId: String(id) });
+
+  const updated = await prisma.task.update({
+    where: { id: String(id) },
+    data: {
+      ...(title !== undefined && { title }),
+      ...(description !== undefined && { description }),
+      ...(priority !== undefined && { priority }),
+      ...(dueDate !== undefined && {
+        dueDate: dueDate ? new Date(dueDate) : null,
+      }),
+    },
+    include: { board: { select: { workspaceId: true } } },
+  });
+
+  emitWorkspaceEvent(updated.board.workspaceId, "task-updated", {
+    taskId: updated.id,
+  });
+  await logActivity({
+    workspaceId: updated.board.workspaceId,
+    userId,
+    action: "task.updated",
+    entityType: "task",
+    entityId: updated.id,
+    meta: { title: updated.title },
+  });
+
+  res.json(new ApiResponse("Task updated", updated));
+});
+
+export const deleteTask = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user?.userId;
+  const { id } = req.params;
+
+  if (!userId) throw new ApiError(401, "Unauthorized");
+
+  const membership = await assertWorkspaceMember(userId, {
+    taskId: String(id),
+  });
+
+  const task = await prisma.task.findUnique({
+    where: { id: String(id) },
+    include: {
+      board: { select: { workspaceId: true } },
+      attachments: { select: { publicId: true, mimeType: true } },
+    },
+  });
+  if (!task) throw new ApiError(404, "Task not found");
+
+  // Only the creator or a manager/owner may delete a task.
+  const isPrivileged =
+    membership.role === "OWNER" || membership.role === "MANAGER";
+  if (!isPrivileged && task.creatorId !== userId) {
+    throw new ApiError(403, "Only the creator or a manager can delete this task");
+  }
+
+  // Clean up any attachment assets before removing the task.
+  await Promise.all(
+    task.attachments
+      .filter((a) => a.publicId)
+      .map((a) =>
+        deleteFromCloudinary(
+          a.publicId as string,
+          a.mimeType?.startsWith("image/") ? "image" : "raw",
+        ),
+      ),
+  );
+
+  await prisma.task.delete({ where: { id: String(id) } });
+
+  emitWorkspaceEvent(task.board.workspaceId, "task-deleted", { taskId: task.id });
+  await logActivity({
+    workspaceId: task.board.workspaceId,
+    userId,
+    action: "task.deleted",
+    entityType: "task",
+    entityId: task.id,
+    meta: { title: task.title },
+  });
+
+  res.json(new ApiResponse("Task deleted"));
+});
+
+export const deleteComment = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+
+    if (!userId) throw new ApiError(401, "Unauthorized");
+
+    const comment = await prisma.comment.findUnique({
+      where: { id: String(id) },
+      include: { task: { include: { board: { select: { workspaceId: true } } } } },
+    });
+    if (!comment) throw new ApiError(404, "Comment not found");
+
+    const membership = await assertWorkspaceMember(userId, {
+      workspaceId: comment.task.board.workspaceId,
+    });
+
+    const isPrivileged =
+      membership.role === "OWNER" || membership.role === "MANAGER";
+    if (!isPrivileged && comment.userId !== userId) {
+      throw new ApiError(403, "You can only delete your own comments");
+    }
+
+    await prisma.comment.delete({ where: { id: String(id) } });
+
+    emitWorkspaceEvent(comment.task.board.workspaceId, "task-comment-deleted", {
+      taskId: comment.taskId,
+      commentId: comment.id,
+    });
+
+    res.json(new ApiResponse("Comment deleted"));
+  },
+);
+
+export const deleteAttachment = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+
+    if (!userId) throw new ApiError(401, "Unauthorized");
+
+    const attachment = await prisma.attachment.findUnique({
+      where: { id: String(id) },
+      include: { task: { include: { board: { select: { workspaceId: true } } } } },
+    });
+    if (!attachment) throw new ApiError(404, "Attachment not found");
+
+    const membership = await assertWorkspaceMember(userId, {
+      workspaceId: attachment.task.board.workspaceId,
+    });
+
+    const isPrivileged =
+      membership.role === "OWNER" || membership.role === "MANAGER";
+    if (!isPrivileged && attachment.uploadedById !== userId) {
+      throw new ApiError(403, "You can only delete attachments you uploaded");
+    }
+
+    if (attachment.publicId) {
+      await deleteFromCloudinary(
+        attachment.publicId,
+        attachment.mimeType?.startsWith("image/") ? "image" : "raw",
+      );
+    }
+
+    await prisma.attachment.delete({ where: { id: String(id) } });
+
+    res.json(new ApiResponse("Attachment deleted"));
   },
 );

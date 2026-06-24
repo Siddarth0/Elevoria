@@ -2,11 +2,16 @@ import { Router } from "express";
 import {
   createBoard,
   getWorkspaceBoards,
+  updateBoard,
+  deleteBoard,
 } from "@/controllers/board.controller";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 import { authorizeWorkspaceRoles } from "@/middlewares/role.middleware";
 import { validate } from "@/middlewares/validate.middleware";
-import { createBoardSchema } from "@/validators/board.validator";
+import {
+  createBoardSchema,
+  updateBoardSchema,
+} from "@/validators/board.validator";
 
 const router = Router();
 
@@ -72,5 +77,47 @@ router.post(
  *         description: Unauthorized
  */
 router.get("/:workspaceId", authMiddleware, getWorkspaceBoards);
+
+/**
+ * @openapi
+ * /board/{id}:
+ *   patch:
+ *     tags: [Board]
+ *     summary: Rename a board (OWNER or MANAGER only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name: { type: string }
+ *     responses:
+ *       200: { description: Board updated }
+ *       403: { description: Forbidden }
+ *   delete:
+ *     tags: [Board]
+ *     summary: Delete a board and its tasks (OWNER or MANAGER only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Board deleted }
+ *       403: { description: Forbidden }
+ */
+router.patch("/:id", authMiddleware, validate(updateBoardSchema), updateBoard);
+router.delete("/:id", authMiddleware, deleteBoard);
 
 export default router;

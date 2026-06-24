@@ -20,3 +20,12 @@ export const inviteMemberSchema = z.object({
 export const acceptInviteSchema = z.object({
   token: z.string().min(1),
 });
+
+export const updateWorkspaceSchema = z
+  .object({
+    name: z.string().min(2).optional(),
+    logo: z.string().nullable().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided",
+  });

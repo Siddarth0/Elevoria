@@ -5,6 +5,8 @@ import { ApiResponse } from "@/utils/apiResponse";
 import { ApiError } from "@/utils/apiError";
 import { randomToken, daysFromNow } from "@/utils/randomToken";
 import { sendInviteEmail } from "@/services/email.service";
+import { assertWorkspaceMember } from "@/services/membership.service";
+import { logActivity } from "@/services/activity.service";
 
 export const createWorkspace = asyncHandler(
   async (req: Request, res: Response) => {
@@ -211,6 +213,133 @@ export const acceptInvite = asyncHandler(
 
     res.json(
       new ApiResponse("Invite accepted", { workspaceId: invite.workspaceId }),
+    );
+  },
+);
+
+export const updateWorkspace = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+    const { name, logo } = req.body;
+
+    if (!userId) throw new ApiError(401, "Unauthorized");
+
+    await assertWorkspaceMember(userId, { workspaceId: String(id) }, [
+      "OWNER",
+      "MANAGER",
+    ]);
+
+    const workspace = await prisma.workspace.update({
+      where: { id: String(id) },
+      data: {
+        ...(name !== undefined && { name }),
+        ...(logo !== undefined && { logo }),
+      },
+    });
+
+    await logActivity({
+      workspaceId: workspace.id,
+      userId,
+      action: "workspace.updated",
+      entityType: "workspace",
+      entityId: workspace.id,
+      meta: { name: workspace.name },
+    });
+
+    res.json(new ApiResponse("Workspace updated", workspace));
+  },
+);
+
+export const deleteWorkspace = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
+    const { id } = req.params;
+
+    if (!userId) throw new ApiError(401, "Unauthorized");
+
+    // Only the owner can delete an entire workspace.
+    await assertWorkspaceMember(userId, { workspaceId: String(id) }, ["OWNER"]);
+
+    await prisma.workspace.delete({ where: { id: String(id) } });
+
+    res.json(new ApiResponse("Workspace deleted"));
+  },
+);
+
+export const removeMember = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
+    const { workspaceId, memberId } = req.params;
+
+    if (!userId) throw new ApiError(401, "Unauthorized");
+
+    await assertWorkspaceMember(userId, { workspaceId: String(workspaceId) }, [
+      "OWNER",
+      "MANAGER",
+    ]);
+
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: String(workspaceId) },
+      select: { ownerId: true },
+    });
+    if (!workspace) throw new ApiError(404, "Workspace not found");
+
+    // The owner cannot be removed from their own workspace.
+    if (workspace.ownerId === String(memberId)) {
+      throw new ApiError(400, "The workspace owner cannot be removed");
+    }
+
+    const result = await prisma.workspaceMember.deleteMany({
+      where: { workspaceId: String(workspaceId), userId: String(memberId) },
+    });
+    if (result.count === 0) throw new ApiError(404, "Member not found");
+
+    await logActivity({
+      workspaceId: String(workspaceId),
+      userId,
+      action: "member.removed",
+      entityType: "member",
+      entityId: String(memberId),
+    });
+
+    res.json(new ApiResponse("Member removed"));
+  },
+);
+
+export const getWorkspaceActivity = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
+    const { workspaceId } = req.params;
+
+    if (!userId) throw new ApiError(401, "Unauthorized");
+
+    await assertWorkspaceMember(userId, { workspaceId: String(workspaceId) });
+
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 30));
+
+    const [items, total] = await Promise.all([
+      prisma.activityLog.findMany({
+        where: { workspaceId: String(workspaceId) },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { user: { select: { id: true, fullName: true } } },
+      }),
+      prisma.activityLog.count({
+        where: { workspaceId: String(workspaceId) },
+      }),
+    ]);
+
+    res.json(
+      new ApiResponse("Activity fetched", {
+        items,
+        page,
+        limit,
+        total,
+        hasMore: page * limit < total,
+      }),
     );
   },
 );

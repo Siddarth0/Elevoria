@@ -6,6 +6,10 @@ import {
   inviteMember,
   getInvite,
   acceptInvite,
+  updateWorkspace,
+  deleteWorkspace,
+  removeMember,
+  getWorkspaceActivity,
 } from "@/controllers/workspace.controller";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 import { authorizeWorkspaceRoles } from "@/middlewares/role.middleware";
@@ -15,6 +19,7 @@ import {
   addMemberSchema,
   inviteMemberSchema,
   acceptInviteSchema,
+  updateWorkspaceSchema,
 } from "@/validators/workspace.validator";
 
 const router = Router();
@@ -202,5 +207,94 @@ router.post(
   validate(acceptInviteSchema),
   acceptInvite,
 );
+
+/**
+ * @openapi
+ * /workspace/{workspaceId}/activity:
+ *   get:
+ *     tags: [Workspace]
+ *     summary: Paginated activity log for a workspace (members only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: workspaceId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 30 }
+ *     responses:
+ *       200: { description: Activity fetched }
+ */
+router.get("/:workspaceId/activity", authMiddleware, getWorkspaceActivity);
+
+/**
+ * @openapi
+ * /workspace/{workspaceId}/member/{memberId}:
+ *   delete:
+ *     tags: [Workspace]
+ *     summary: Remove a member from a workspace (OWNER or MANAGER only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: workspaceId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - in: path
+ *         name: memberId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Member removed }
+ *       400: { description: The workspace owner cannot be removed }
+ *       403: { description: Forbidden }
+ */
+router.delete("/:workspaceId/member/:memberId", authMiddleware, removeMember);
+
+/**
+ * @openapi
+ * /workspace/{id}:
+ *   patch:
+ *     tags: [Workspace]
+ *     summary: Rename or update a workspace (OWNER or MANAGER only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               logo: { type: string, nullable: true }
+ *     responses:
+ *       200: { description: Workspace updated }
+ *       403: { description: Forbidden }
+ *   delete:
+ *     tags: [Workspace]
+ *     summary: Delete a workspace and everything in it (OWNER only)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: Workspace deleted }
+ *       403: { description: Forbidden }
+ */
+router.patch("/:id", authMiddleware, validate(updateWorkspaceSchema), updateWorkspace);
+router.delete("/:id", authMiddleware, deleteWorkspace);
 
 export default router;
