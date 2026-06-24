@@ -8,3 +8,22 @@ export const createTaskSchema = z.object({
   boardId: z.string().uuid(),
   assigneeId: z.string().uuid().optional(),
 });
+
+export const updateTaskStatusSchema = z.object({
+  taskId: z.string().uuid(),
+  status: z.enum(["TODO", "IN_PROGRESS", "REVIEW", "COMPLETED"]),
+});
+
+export const assignTaskSchema = z.object({
+  taskId: z.string().uuid(),
+  assigneeId: z.string().uuid().nullable().optional(),
+});
+
+export const addCommentSchema = z.object({
+  taskId: z.string().uuid(),
+  content: z.string().min(1),
+});
+
+export const attachFileSchema = z.object({
+  taskId: z.string().uuid(),
+});

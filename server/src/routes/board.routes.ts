@@ -5,6 +5,8 @@ import {
 } from "@/controllers/board.controller";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 import { authorizeWorkspaceRoles } from "@/middlewares/role.middleware";
+import { validate } from "@/middlewares/validate.middleware";
+import { createBoardSchema } from "@/validators/board.validator";
 
 const router = Router();
 
@@ -42,6 +44,7 @@ const router = Router();
 router.post(
   "/create",
   authMiddleware,
+  validate(createBoardSchema),
   authorizeWorkspaceRoles(["OWNER", "MANAGER"]),
   createBoard,
 );

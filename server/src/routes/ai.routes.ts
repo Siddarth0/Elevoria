@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { summarizeDocument, generateSubtasks, suggestDeadline } from "@/controllers/ai.controller";
 import { authMiddleware } from "@/middlewares/auth.middleware";
+import { validate } from "@/middlewares/validate.middleware";
+import { aiSummarizeSchema, aiGenerateSchema } from "@/validators/ai.validator";
 
 const router = Router();
 
@@ -86,7 +88,7 @@ const router = Router();
  *                         result: { $ref: '#/components/schemas/AiSummaryResult' }
  *       401: { description: Unauthorized }
  */
-router.post("/summarize", authMiddleware, summarizeDocument);
+router.post("/summarize", authMiddleware, validate(aiSummarizeSchema), summarizeDocument);
 
 /**
  * @openapi
@@ -127,7 +129,7 @@ router.post("/summarize", authMiddleware, summarizeDocument);
  *                         result: { $ref: '#/components/schemas/AiSubtasksResult' }
  *       401: { description: Unauthorized }
  */
-router.post("/subtasks", authMiddleware, generateSubtasks);
+router.post("/subtasks", authMiddleware, validate(aiGenerateSchema), generateSubtasks);
 
 /**
  * @openapi
@@ -168,6 +170,6 @@ router.post("/subtasks", authMiddleware, generateSubtasks);
  *                         result: { $ref: '#/components/schemas/AiDeadlineResult' }
  *       401: { description: Unauthorized }
  */
-router.post("/deadline", authMiddleware, suggestDeadline);
+router.post("/deadline", authMiddleware, validate(aiGenerateSchema), suggestDeadline);
 
 export default router;

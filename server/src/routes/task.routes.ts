@@ -9,7 +9,13 @@ import {
 } from "@/controllers/task.controller";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 import { validate } from "@/middlewares/validate.middleware";
-import { createTaskSchema } from "@/validators/task.validator";
+import {
+  createTaskSchema,
+  updateTaskStatusSchema,
+  assignTaskSchema,
+  addCommentSchema,
+  attachFileSchema,
+} from "@/validators/task.validator";
 import { upload } from "@/middlewares/upload.middleware";
 
 const router = Router();
@@ -116,7 +122,7 @@ router.get("/board/:boardId", authMiddleware, getTasksByBoard);
  *       401:
  *         description: Unauthorized
  */
-router.patch("/status", authMiddleware, updateTaskStatus);
+router.patch("/status", authMiddleware, validate(updateTaskStatusSchema), updateTaskStatus);
 
 /**
  * @openapi
@@ -147,7 +153,7 @@ router.patch("/status", authMiddleware, updateTaskStatus);
  *       401:
  *         description: Unauthorized
  */
-router.patch("/assign", authMiddleware, assignTask);
+router.patch("/assign", authMiddleware, validate(assignTaskSchema), assignTask);
 
 /**
  * @openapi
@@ -178,7 +184,7 @@ router.patch("/assign", authMiddleware, assignTask);
  *       401:
  *         description: Unauthorized
  */
-router.post("/comment", authMiddleware, addCommentToTask);
+router.post("/comment", authMiddleware, validate(addCommentSchema), addCommentToTask);
 
 /**
  * @openapi
@@ -213,6 +219,12 @@ router.post("/comment", authMiddleware, addCommentToTask);
  *       403:
  *         description: Forbidden — user is not a workspace member
  */
-router.post("/attach", authMiddleware, upload.single("file"), attachFileToTask);
+router.post(
+  "/attach",
+  authMiddleware,
+  upload.single("file"),
+  validate(attachFileSchema),
+  attachFileToTask,
+);
 
 export default router;
