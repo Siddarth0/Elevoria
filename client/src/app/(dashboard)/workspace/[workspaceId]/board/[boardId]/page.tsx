@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useTasks } from "@/hooks/use-tasks";
 import { useWorkspaces } from "@/hooks/use-workspaces";
+import { useWorkspaceRealtime } from "@/hooks/use-realtime";
 import { Task, TaskStatus } from "@/types/task";
 import { Workspace } from "@/types/workspace";
 import TaskCard from "@/components/task-card";
@@ -33,6 +34,8 @@ export default function BoardPage() {
   const { data: tasks, isLoading } = useTasks(boardId);
   const { data: workspaces } = useWorkspaces();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  useWorkspaceRealtime(workspaceId, boardId);
 
   const workspace = (workspaces as Workspace[] | undefined)?.find(
     (w) => w.id === workspaceId,

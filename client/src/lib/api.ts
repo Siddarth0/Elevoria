@@ -1,4 +1,5 @@
 import { useAuthStore } from "@/store/auth.store";
+import { disconnectSocket } from "@/lib/socket";
 import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api";
@@ -44,6 +45,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch {
         useAuthStore.getState().logout();
+        disconnectSocket();
 
         if (typeof window !== "undefined") {
           window.location.href = "/login";

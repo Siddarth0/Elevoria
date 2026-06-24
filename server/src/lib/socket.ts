@@ -40,6 +40,9 @@ export const initSocket = (server: HTTPServer) => {
     const userId = socket.data.userId as string;
     console.log("Socket connected:", socket.id, "user:", userId);
 
+    // Personal room for user-targeted events (e.g. notifications).
+    socket.join(`user:${userId}`);
+
     socket.on("join-workspace", async (workspaceId: string) => {
       // Only let a socket join rooms for workspaces it belongs to.
       const membership = await prisma.workspaceMember.findUnique({

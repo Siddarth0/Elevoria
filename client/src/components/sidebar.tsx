@@ -8,6 +8,7 @@ import { useBoards } from "@/hooks/use-boards";
 import { Workspace } from "@/types/workspace";
 import { Board } from "@/types/board";
 import Logo from "@/components/logo";
+import NotificationBell from "@/components/notification-bell";
 import {
   Search, LayoutDashboard, ChevronDown, Plus,
   Archive, Trash2, Hash, LayoutGrid, Clock,
@@ -43,8 +44,9 @@ export default function Sidebar() {
       }}
     >
       {/* Brand */}
-      <div className="px-4 pt-5 pb-4 shrink-0">
+      <div className="px-4 pt-5 pb-4 shrink-0 flex items-center justify-between">
         <Logo href="/dashboard" size="md" />
+        <NotificationBell />
       </div>
 
       {/* Search */}

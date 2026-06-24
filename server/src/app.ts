@@ -14,6 +14,7 @@ import workspaceRoutes from "@/routes/workspace.routes";
 import boardRoutes from "@/routes/board.routes";
 import taskRoutes from "@/routes/task.routes";
 import aiRoutes from "@/routes/ai.routes";
+import notificationRoutes from "@/routes/notification.routes";
 
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./docs/swagger";
@@ -79,6 +80,7 @@ app.use("/api/workspace", workspaceRoutes);
 app.use("/api/board", boardRoutes);
 app.use("/api/task", taskRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/notification", notificationRoutes);
 
 app.use(notFoundMiddleware);
 app.use(errorMiddleware);

@@ -6,6 +6,7 @@ import { ApiError } from "@/utils/apiError";
 import { uploadToCloudinary } from "@/utils/uploadToCloudinary";
 import { emitWorkspaceEvent } from "@/services/realtime.service";
 import { assertWorkspaceMember } from "@/services/membership.service";
+import { notifyUser } from "@/services/notification.service";
 
 export const createTask = asyncHandler(async (req: Request, res: Response) => {
   const userId = req.user?.userId;
@@ -31,7 +32,14 @@ export const createTask = asyncHandler(async (req: Request, res: Response) => {
       assigneeId,
       creatorId: userId!,
     },
+    include: { board: { select: { workspaceId: true } } },
   });
+
+  emitWorkspaceEvent(task.board.workspaceId, "task-created", { task });
+
+  if (assigneeId && assigneeId !== userId) {
+    await notifyUser(assigneeId, `You were assigned the task "${task.title}".`);
+  }
 
   res.status(201).json(new ApiResponse("Task created successfully", task));
 });
@@ -102,7 +110,20 @@ export const assignTask = asyncHandler(async (req: Request, res: Response) => {
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: { assigneeId },
+    include: { board: { select: { workspaceId: true } } },
   });
+
+  emitWorkspaceEvent(updated.board.workspaceId, "task-assigned", {
+    taskId: updated.id,
+    assigneeId: updated.assigneeId,
+  });
+
+  if (assigneeId && assigneeId !== userId) {
+    await notifyUser(
+      assigneeId,
+      `You were assigned the task "${updated.title}".`,
+    );
+  }
 
   res.json(new ApiResponse("Task assigned successfully", updated));
 });
@@ -138,6 +159,21 @@ export const addCommentToTask = asyncHandler(
       taskId: comment.taskId,
       comment,
     });
+
+    // Notify the task's creator and assignee, except whoever commented.
+    const recipients = new Set(
+      [comment.task.creatorId, comment.task.assigneeId].filter(
+        (id): id is string => !!id && id !== userId,
+      ),
+    );
+    await Promise.all(
+      [...recipients].map((id) =>
+        notifyUser(
+          id,
+          `${comment.user.fullName} commented on "${comment.task.title}".`,
+        ),
+      ),
+    );
 
     res.status(201).json(new ApiResponse("Comment added", comment));
   },
