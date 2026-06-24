@@ -1,8 +1,25 @@
 import { Router } from "express";
-import { login, logout, refreshAccessToken, register } from "@/controllers/auth.controller";
+import {
+  login,
+  logout,
+  refreshAccessToken,
+  register,
+  googleAuth,
+  verifyEmail,
+  resendVerification,
+  requestPasswordReset,
+  resetPassword,
+} from "@/controllers/auth.controller";
 import { authMiddleware } from "@/middlewares/auth.middleware";
 import { validate } from "@/middlewares/validate.middleware";
-import { loginSchema, registerSchema } from "@/validators/auth.validators";
+import {
+  loginSchema,
+  registerSchema,
+  googleAuthSchema,
+  verifyEmailSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema,
+} from "@/validators/auth.validators";
 
 const router = Router();
 
@@ -104,6 +121,32 @@ router.post("/login", validate(loginSchema), login);
 
 /**
  * @openapi
+ * /auth/google:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Sign in or sign up with a Google ID token
+ *     description: Accepts the credential (ID token) from Google Identity Services, verifies it, and creates or links the account.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [credential]
+ *             properties:
+ *               credential: { type: string, description: Google ID token (JWT) }
+ *     responses:
+ *       200:
+ *         description: Google sign-in successful
+ *       401:
+ *         description: Invalid Google credential
+ *       500:
+ *         description: Google sign-in is not configured
+ */
+router.post("/google", validate(googleAuthSchema), googleAuth);
+
+/**
+ * @openapi
  * /auth/logout:
  *   post:
  *     tags:
@@ -141,5 +184,87 @@ router.post("/logout", logout);
  *         description: No refresh token or invalid refresh token
  */
 router.post("/refresh", refreshAccessToken);
+
+/**
+ * @openapi
+ * /auth/verify-email:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify a user's email with the token from the verification email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token: { type: string }
+ *     responses:
+ *       200: { description: Email verified successfully }
+ *       400: { description: Invalid or expired verification link }
+ */
+router.post("/verify-email", validate(verifyEmailSchema), verifyEmail);
+
+/**
+ * @openapi
+ * /auth/resend-verification:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Resend the email verification link to the authenticated user
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200: { description: Verification email sent }
+ *       400: { description: Email already verified }
+ *       401: { description: Unauthorized }
+ */
+router.post("/resend-verification", authMiddleware, resendVerification);
+
+/**
+ * @openapi
+ * /auth/forgot-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Request a password reset link
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200: { description: Reset link sent if the account exists }
+ */
+router.post(
+  "/forgot-password",
+  validate(requestPasswordResetSchema),
+  requestPasswordReset,
+);
+
+/**
+ * @openapi
+ * /auth/reset-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reset a password using the token from the reset email
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, password]
+ *             properties:
+ *               token: { type: string }
+ *               password: { type: string, minLength: 6 }
+ *     responses:
+ *       200: { description: Password reset successfully }
+ *       400: { description: Invalid or expired reset link }
+ */
+router.post("/reset-password", validate(resetPasswordSchema), resetPassword);
 
 export default router;

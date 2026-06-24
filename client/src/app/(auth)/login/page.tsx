@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import Logo from "@/components/logo";
+import GoogleSignIn from "@/components/google-sign-in";
 
 export default function LoginPage() {
   const setUser = useAuthStore((s) => s.setUser);
@@ -26,7 +27,8 @@ export default function LoginPage() {
       const res = await api.post("/auth/login", { email: email.trim(), password });
       setUser(res.data.data.user);
       setAccessToken(res.data.data.accessToken);
-      router.push("/dashboard");
+      const redirect = new URLSearchParams(window.location.search).get("redirect");
+      router.push(redirect || "/dashboard");
     } catch (e) {
       const err = e as { response?: { data?: { message?: string } } };
       setError(err.response?.data?.message || "Invalid credentials.");
@@ -123,6 +125,15 @@ export default function LoginPage() {
                 onKeyDown={(e) => e.key === "Enter" && login()}
               />
             </div>
+            <div className="text-right">
+              <Link
+                href="/forgot-password"
+                className="text-xs font-semibold transition-colors"
+                style={{ color: "var(--text-3)" }}
+              >
+                Forgot password?
+              </Link>
+            </div>
           </div>
 
           <button onClick={login} disabled={loading} className="btn-primary w-full mt-5">
@@ -135,6 +146,8 @@ export default function LoginPage() {
               </>
             )}
           </button>
+
+          <GoogleSignIn onError={setError} />
 
           <p className="mt-6 text-sm text-center" style={{ color: "var(--text-3)" }}>
             No account?{" "}

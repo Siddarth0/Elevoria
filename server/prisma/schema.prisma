@@ -31,8 +31,14 @@ enum TaskStatus {
 
 enum SubscriptionPlan {
   FREE
-  PRO 
+  PRO
   TEAM
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
 }
 
 //-----USER TABLE--------
@@ -41,10 +47,15 @@ model User {
   id                  String              @id @default(uuid())
   fullName            String
   email               String              @unique
-  password            String
+  password            String?
+  googleId            String?             @unique
   avatar              String?
   isEmailVerified     Boolean              @default(false)
-  refreshToken        String?         
+  refreshToken        String?
+  emailVerifyToken    String?              @unique
+  emailVerifyExpires  DateTime?
+  passwordResetToken  String?              @unique
+  passwordResetExpires DateTime?
   createdAt           DateTime            @default(now())
   updatedAt           DateTime            @updatedAt
 
@@ -74,6 +85,25 @@ model Workspace {
   boards        Board[]
   subscriptions Subscription[]
   aiHistories   AIHistory[]
+  invites       WorkspaceInvite[]
+}
+
+//-------WORKSPACE INVITE TABLE-------
+
+model WorkspaceInvite {
+  id           String        @id @default(uuid())
+  email        String
+  workspaceId  String
+  role         WorkspaceRole @default(MEMBER)
+  token        String        @unique
+  status       InviteStatus  @default(PENDING)
+  invitedById  String
+  expiresAt    DateTime
+  createdAt    DateTime      @default(now())
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([email])
 }
 
 //--------WorkSpace Member TABLE-------

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import Logo from "@/components/logo";
+import GoogleSignIn from "@/components/google-sign-in";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -31,7 +32,8 @@ export default function RegisterPage() {
       });
       setUser(res.data.data.user);
       setAccessToken(res.data.data.accessToken);
-      router.push("/dashboard");
+      const redirect = new URLSearchParams(window.location.search).get("redirect");
+      router.push(redirect || "/dashboard");
     } catch (e) {
       const err = e as { response?: { data?: { message?: string } } };
       setError(err.response?.data?.message || "Registration failed.");
@@ -136,6 +138,8 @@ export default function RegisterPage() {
               </>
             )}
           </button>
+
+          <GoogleSignIn onError={setError} />
 
           <p className="mt-6 text-sm text-center" style={{ color: "var(--text-3)" }}>
             Already have an account?{" "}
