@@ -42,13 +42,40 @@ export const addComment = async (data: {
   return res.data.data;
 };
 
+export const updateTask = async (data: {
+  taskId: string;
+  title?: string;
+  description?: string | null;
+  priority?: TaskPriority;
+  dueDate?: string | null;
+}) => {
+  const { taskId, ...body } = data;
+  const res = await api.patch(`/task/${taskId}`, body);
+  return res.data.data;
+};
+
+export const deleteTask = async (taskId: string) => {
+  const res = await api.delete(`/task/${taskId}`);
+  return res.data.data;
+};
+
+export const deleteComment = async (commentId: string) => {
+  const res = await api.delete(`/task/comment/${commentId}`);
+  return res.data.data;
+};
+
+export const deleteAttachment = async (attachmentId: string) => {
+  const res = await api.delete(`/task/attachment/${attachmentId}`);
+  return res.data.data;
+};
+
 export const attachFileToTask = async (data: {
   taskId: string;
-  file: File;
+  files: File[];
 }) => {
   const formData = new FormData();
   formData.append("taskId", data.taskId);
-  formData.append("file", data.file);
+  data.files.forEach((file) => formData.append("files", file));
 
   const res = await api.post("/task/attach", formData, {
     headers: { "Content-Type": "multipart/form-data" },

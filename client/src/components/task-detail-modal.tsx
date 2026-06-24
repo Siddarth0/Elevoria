@@ -8,12 +8,18 @@ import { useAddComment } from "@/hooks/use-add-comment";
 import { useGenerateSubtasks, useSuggestDeadline } from "@/hooks/use-ai-tools";
 import { useAssignTask } from "@/hooks/use-assign-task";
 import { useAttachFile } from "@/hooks/use-attach-file";
+import {
+  useUpdateTask,
+  useDeleteTask,
+  useDeleteComment,
+  useDeleteAttachment,
+} from "@/hooks/use-task-mutations";
 import type {
   DeadlineResult,
   SubtasksResult,
 } from "@/services/ai.service";
 import { WorkspaceMember } from "@/types/workspace";
-import { X, Calendar, User, Flag, MessageSquare, Send, Paperclip, Upload, Bot, CalendarClock, ListChecks } from "lucide-react";
+import { X, Calendar, User, Flag, MessageSquare, Send, Paperclip, Upload, Bot, CalendarClock, ListChecks, Pencil, Trash2, Check } from "lucide-react";
 
 const STATUS_OPTIONS: { value: TaskStatus; label: string; color: string }[] = [
   { value: "TODO",        label: "To Do",       color: "#8B9694" },
@@ -54,11 +60,50 @@ export default function TaskDetailModal({
   const commentMutation = useAddComment(boardId);
   const assignMutation = useAssignTask(boardId);
   const attachMutation = useAttachFile(boardId);
+  const updateMutation = useUpdateTask(boardId);
+  const deleteMutation = useDeleteTask(boardId);
+  const deleteCommentMutation = useDeleteComment(boardId);
+  const deleteAttachmentMutation = useDeleteAttachment(boardId);
   const subtasksMutation = useGenerateSubtasks();
   const deadlineMutation = useSuggestDeadline();
   const [aiSubtasks, setAiSubtasks] = useState<SubtasksResult | null>(null);
   const [aiDeadline, setAiDeadline] = useState<DeadlineResult | null>(null);
   const [aiError, setAiError] = useState("");
+
+  // Inline edit state for the task's core fields.
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(task.title);
+  const [editDescription, setEditDescription] = useState(task.description ?? "");
+  const [editPriority, setEditPriority] = useState<TaskPriority>(task.priority);
+  const [editDueDate, setEditDueDate] = useState(
+    task.dueDate ? task.dueDate.slice(0, 10) : "",
+  );
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const startEditing = () => {
+    setEditTitle(task.title);
+    setEditDescription(task.description ?? "");
+    setEditPriority(task.priority);
+    setEditDueDate(task.dueDate ? task.dueDate.slice(0, 10) : "");
+    setEditing(true);
+  };
+
+  const saveEdits = async () => {
+    if (!editTitle.trim()) return;
+    await updateMutation.mutateAsync({
+      taskId: task.id,
+      title: editTitle.trim(),
+      description: editDescription.trim() || null,
+      priority: editPriority,
+      dueDate: editDueDate ? new Date(editDueDate).toISOString() : null,
+    });
+    setEditing(false);
+  };
+
+  const handleDeleteTask = async () => {
+    await deleteMutation.mutateAsync(task.id);
+    onClose();
+  };
 
   const handleStatusChange = (status: TaskStatus) =>
     statusMutation.mutate({ taskId: task.id, status });
@@ -74,9 +119,12 @@ export default function TaskDetailModal({
     setCommentText("");
   };
 
-  const handleFileChange = async (file: File | undefined) => {
-    if (!file) return;
-    await attachMutation.mutateAsync({ taskId: task.id, file });
+  const handleFileChange = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    await attachMutation.mutateAsync({
+      taskId: task.id,
+      files: Array.from(fileList),
+    });
   };
 
   const generateAiSubtasks = async () => {
@@ -130,48 +178,153 @@ export default function TaskDetailModal({
             style={{ borderBottom: "1px solid var(--border)" }}
           >
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
-                  style={{ background: priority.bg, color: priority.color }}
-                >
-                  {priority.label}
-                </span>
-              </div>
-              <Dialog.Title
-                className="font-bold text-lg leading-snug"
-                style={{ color: "var(--text)" }}
-              >
-                {task.title}
-              </Dialog.Title>
-              {task.description && (
-                <p
-                  className="text-sm mt-2 leading-relaxed"
-                  style={{ color: "var(--text-2)" }}
-                >
-                  {task.description}
-                </p>
+              {editing ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="label">Title</label>
+                    <input
+                      value={editTitle}
+                      onChange={(e) => setEditTitle(e.target.value)}
+                      className="field"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="label">Description</label>
+                    <textarea
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      rows={3}
+                      className="field"
+                      style={{ resize: "vertical" }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="label">Priority</label>
+                      <select
+                        value={editPriority}
+                        onChange={(e) => setEditPriority(e.target.value as TaskPriority)}
+                        className="field"
+                        style={{ padding: "0.5rem 0.7rem", fontSize: "0.8125rem" }}
+                      >
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="URGENT">Urgent</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="label">Due date</label>
+                      <input
+                        type="date"
+                        value={editDueDate}
+                        onChange={(e) => setEditDueDate(e.target.value)}
+                        className="field"
+                        style={{ padding: "0.5rem 0.7rem", fontSize: "0.8125rem" }}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={saveEdits}
+                      disabled={updateMutation.isPending || !editTitle.trim()}
+                      className="btn-primary px-3.5"
+                    >
+                      <Check className="w-4 h-4" />
+                      {updateMutation.isPending ? "Saving..." : "Save"}
+                    </button>
+                    <button onClick={() => setEditing(false)} className="btn-ghost">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                      style={{ background: priority.bg, color: priority.color }}
+                    >
+                      {priority.label}
+                    </span>
+                  </div>
+                  <Dialog.Title
+                    className="font-bold text-lg leading-snug"
+                    style={{ color: "var(--text)" }}
+                  >
+                    {task.title}
+                  </Dialog.Title>
+                  {task.description && (
+                    <p
+                      className="text-sm mt-2 leading-relaxed"
+                      style={{ color: "var(--text-2)" }}
+                    >
+                      {task.description}
+                    </p>
+                  )}
+                </>
               )}
             </div>
-            <Dialog.Close asChild>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors"
-                style={{ background: "var(--elevated)", color: "var(--text-3)" }}
-                onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLElement).style.color = "var(--text)")
-                }
-                onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLElement).style.color = "var(--text-3)")
-                }
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </Dialog.Close>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {!editing && (
+                <>
+                  <button
+                    onClick={startEditing}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+                    style={{ background: "var(--elevated)", color: "var(--text-3)" }}
+                    title="Edit task"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+                    style={{ background: "var(--elevated)", color: "#F0A09A" }}
+                    title="Delete task"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+              <Dialog.Close asChild>
+                <button
+                  onClick={onClose}
+                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
+                  style={{ background: "var(--elevated)", color: "var(--text-3)" }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </Dialog.Close>
+            </div>
           </div>
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {confirmDelete && (
+              <div
+                className="rounded-xl p-4 flex items-center justify-between gap-3"
+                style={{ background: "rgba(198,82,74,0.1)", border: "1px solid rgba(198,82,74,0.25)" }}
+              >
+                <p className="text-sm" style={{ color: "#F0A09A" }}>
+                  Delete this task permanently?
+                </p>
+                <div className="flex gap-2 shrink-0">
+                  <button
+                    onClick={handleDeleteTask}
+                    disabled={deleteMutation.isPending}
+                    className="btn-primary px-3 py-1.5 text-xs"
+                    style={{ background: "#C6524A" }}
+                  >
+                    {deleteMutation.isPending ? "Deleting..." : "Delete"}
+                  </button>
+                  <button onClick={() => setConfirmDelete(false)} className="btn-ghost px-3 py-1.5 text-xs">
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Status */}
             <div>
               <p
@@ -359,21 +512,34 @@ export default function TaskDetailModal({
                   const url = attachment.fileUrl ?? attachment.url;
 
                   return (
-                    <a
+                    <div
                       key={attachment.id}
-                      href={url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors"
+                      className="group flex items-center justify-between rounded-xl px-3 py-2 text-sm"
                       style={{
                         background: "rgba(233,229,215,0.035)",
                         border: "1px solid var(--border)",
                         color: "var(--text-2)",
                       }}
                     >
-                      <span className="truncate">{name}</span>
-                      <Paperclip className="h-4 w-4 shrink-0" />
-                    </a>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-2 truncate flex-1 min-w-0"
+                      >
+                        <Paperclip className="h-4 w-4 shrink-0" />
+                        <span className="truncate">{name}</span>
+                      </a>
+                      <button
+                        onClick={() => deleteAttachmentMutation.mutate(attachment.id)}
+                        disabled={deleteAttachmentMutation.isPending}
+                        className="ml-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ color: "#F0A09A" }}
+                        title="Delete attachment"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   );
                 })}
 
@@ -384,12 +550,13 @@ export default function TaskDetailModal({
 
               <label className="btn-ghost mt-3 w-full">
                 <Upload className="h-4 w-4" />
-                {attachMutation.isPending ? "Uploading..." : "Upload file"}
+                {attachMutation.isPending ? "Uploading..." : "Upload files"}
                 <input
                   type="file"
+                  multiple
                   className="hidden"
                   disabled={attachMutation.isPending}
-                  onChange={(e) => handleFileChange(e.target.files?.[0])}
+                  onChange={(e) => handleFileChange(e.target.files)}
                 />
               </label>
             </div>
@@ -405,7 +572,7 @@ export default function TaskDetailModal({
 
               <div className="space-y-4">
                 {task.comments.map((comment) => (
-                  <div key={comment.id} className="flex gap-3">
+                  <div key={comment.id} className="group flex gap-3">
                     <div
                       className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
                       style={{ background: "var(--amber-mid)", color: "var(--amber)" }}
@@ -420,6 +587,15 @@ export default function TaskDetailModal({
                         <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
                           {new Date(comment.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                         </p>
+                        <button
+                          onClick={() => deleteCommentMutation.mutate(comment.id)}
+                          disabled={deleteCommentMutation.isPending}
+                          className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ color: "#F0A09A" }}
+                          title="Delete comment"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
                       </div>
                       <p className="text-sm leading-relaxed" style={{ color: "var(--text-2)" }}>
                         {comment.content}
