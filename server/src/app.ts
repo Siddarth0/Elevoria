@@ -6,7 +6,8 @@ import cookieParser from "cookie-parser";
 
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { notFoundMiddleware } from "./middlewares/notFound.middleware";
-import { ApiResponse } from "./utils/apiResponse";
+import { globalLimiter, authLimiter } from "./middlewares/rateLimit.middleware";
+import { env } from "./config/env";
 
 import authRoutes from "@/routes/auth.routes";
 import workspaceRoutes from "@/routes/workspace.routes";
@@ -21,9 +22,18 @@ import { apiReference } from "@scalar/express-api-reference";
 
 const app = express();
 
+const allowedOrigins = env.CLIENT_ORIGIN.split(",").map((o) => o.trim());
+
 app.use(
   cors({
-    origin: true,
+    origin(origin, callback) {
+      // Allow non-browser clients (curl, server-to-server) with no Origin header.
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   }),
 );
@@ -33,6 +43,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(globalLimiter);
 
 app.get("/", (_req, res) => {
   res.json({
@@ -63,7 +74,7 @@ app.use(
 );
 
 /* Future routes here */
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);
 app.use("/api/workspace", workspaceRoutes);
 app.use("/api/board", boardRoutes);
 app.use("/api/task", taskRoutes);
