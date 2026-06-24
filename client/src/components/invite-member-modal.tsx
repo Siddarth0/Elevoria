@@ -1,9 +1,10 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { MailPlus, X } from "lucide-react";
-import { useAddWorkspaceMember } from "@/hooks/use-add-workspace-member";
+import { inviteWorkspaceMember } from "@/services/workspace.service";
 import { WorkspaceRole } from "@/types/workspace";
 
 export default function InviteMemberModal({
@@ -17,7 +18,7 @@ export default function InviteMemberModal({
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const mutation = useAddWorkspaceMember();
+  const mutation = useMutation({ mutationFn: inviteWorkspaceMember });
 
   const invite = async () => {
     if (!email.trim()) return;
@@ -30,12 +31,12 @@ export default function InviteMemberModal({
         email: email.trim(),
         role,
       });
-      setSuccess(`${email.trim()} was added to this workspace.`);
+      setSuccess(`Invitation sent to ${email.trim()}.`);
       setEmail("");
       setRole("MEMBER");
     } catch (e) {
       const err = e as { response?: { data?: { message?: string } } };
-      setError(err.response?.data?.message || "Failed to add member.");
+      setError(err.response?.data?.message || "Failed to send invite.");
     }
   };
 
@@ -138,7 +139,7 @@ export default function InviteMemberModal({
               disabled={mutation.isPending || !email.trim()}
               className="btn-primary w-full"
             >
-              {mutation.isPending ? "Adding..." : "Add member"}
+              {mutation.isPending ? "Sending..." : "Send invite"}
             </button>
           </div>
         </Dialog.Content>

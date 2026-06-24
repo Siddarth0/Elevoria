@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { asyncHandler } from "@/utils/asyncHandler";
 import { ApiResponse } from "@/utils/apiResponse";
 import { ApiError } from "@/utils/apiError";
+import { randomToken, daysFromNow } from "@/utils/randomToken";
+import { sendInviteEmail } from "@/services/email.service";
 
 export const createWorkspace = asyncHandler(
   async (req: Request, res: Response) => {
@@ -82,6 +84,133 @@ export const addMemberToWorkspace = asyncHandler(
       },
     });
 
-    res.json(new ApiResponse("Member added succesfully", member));
+    res.json(new ApiResponse("Member added successfully", member));
+  },
+);
+
+/**
+ * Invite someone by email — works whether or not they already have an account.
+ * Creates a tokened invite and emails an accept link. (OWNER/MANAGER only,
+ * enforced by route middleware.)
+ */
+export const inviteMember = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { workspaceId, email, role } = req.body as {
+      workspaceId: string;
+      email: string;
+      role: "OWNER" | "MANAGER" | "MEMBER";
+    };
+
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+    if (!workspace) throw new ApiError(404, "Workspace not found");
+
+    // If they already have an account and are a member, short-circuit.
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      const already = await prisma.workspaceMember.findUnique({
+        where: {
+          userId_workspaceId: { userId: existingUser.id, workspaceId },
+        },
+      });
+      if (already) throw new ApiError(400, "User is already a member");
+    }
+
+    const token = randomToken();
+
+    const invite = await prisma.workspaceInvite.create({
+      data: {
+        email,
+        workspaceId,
+        role,
+        token,
+        invitedById: req.user!.userId,
+        expiresAt: daysFromNow(7),
+      },
+    });
+
+    await sendInviteEmail(email, workspace.name, token);
+
+    res
+      .status(201)
+      .json(
+        new ApiResponse("Invite sent", {
+          id: invite.id,
+          email: invite.email,
+          status: invite.status,
+        }),
+      );
+  },
+);
+
+/** Public lookup so the invite landing page can show context before accepting. */
+export const getInvite = asyncHandler(async (req: Request, res: Response) => {
+  const { token } = req.params;
+
+  const invite = await prisma.workspaceInvite.findUnique({
+    where: { token: String(token) },
+    include: { workspace: { select: { name: true } } },
+  });
+
+  if (!invite) throw new ApiError(404, "Invite not found");
+
+  res.json(
+    new ApiResponse("Invite fetched", {
+      email: invite.email,
+      role: invite.role,
+      status: invite.status,
+      expiresAt: invite.expiresAt,
+      workspaceName: invite.workspace.name,
+      expired: invite.expiresAt < new Date(),
+    }),
+  );
+});
+
+/** Accept an invite as the logged-in user (their email must match the invite). */
+export const acceptInvite = asyncHandler(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.userId;
+    const { token } = req.body;
+    if (!userId) throw new ApiError(401, "Unauthorized");
+
+    const invite = await prisma.workspaceInvite.findUnique({
+      where: { token },
+    });
+
+    if (!invite || invite.status !== "PENDING") {
+      throw new ApiError(400, "Invalid or already-used invite");
+    }
+    if (invite.expiresAt < new Date()) {
+      await prisma.workspaceInvite.update({
+        where: { id: invite.id },
+        data: { status: "EXPIRED" },
+      });
+      throw new ApiError(400, "Invite has expired");
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new ApiError(404, "User not found");
+    if (user.email.toLowerCase() !== invite.email.toLowerCase()) {
+      throw new ApiError(403, "This invite was issued to a different email");
+    }
+
+    // Create membership if not present, then mark the invite accepted.
+    await prisma.workspaceMember.upsert({
+      where: {
+        userId_workspaceId: { userId, workspaceId: invite.workspaceId },
+      },
+      update: {},
+      create: { userId, workspaceId: invite.workspaceId, role: invite.role },
+    });
+
+    await prisma.workspaceInvite.update({
+      where: { id: invite.id },
+      data: { status: "ACCEPTED" },
+    });
+
+    res.json(
+      new ApiResponse("Invite accepted", { workspaceId: invite.workspaceId }),
+    );
   },
 );

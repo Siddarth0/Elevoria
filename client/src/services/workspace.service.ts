@@ -72,3 +72,33 @@ export const addWorkspaceMember = async (data: {
   const res = await api.post("/workspace/add-member", data);
   return res.data.data;
 };
+
+export const inviteWorkspaceMember = async (data: {
+  workspaceId: string;
+  email: string;
+  role: WorkspaceRole;
+}) => {
+  const res = await api.post("/workspace/invite", data);
+  return res.data.data;
+};
+
+export type InviteDetails = {
+  email: string;
+  role: WorkspaceRole;
+  status: "PENDING" | "ACCEPTED" | "EXPIRED";
+  expiresAt: string;
+  workspaceName: string;
+  expired: boolean;
+};
+
+export const getInviteDetails = async (
+  token: string,
+): Promise<InviteDetails> => {
+  const res = await api.get(`/workspace/invite/${token}`);
+  return res.data.data;
+};
+
+export const acceptWorkspaceInvite = async (token: string) => {
+  const res = await api.post("/workspace/accept-invite", { token });
+  return res.data.data;
+};
